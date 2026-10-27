@@ -1,0 +1,26 @@
+# Étape 3 : cache sémantique des pages de recherche (façon GPTCache / Upstash).
+# Le seuil de similarité règle le compromis entre hits gagnés et faux hits.
+# Lancer : cachebench run experiments/magento1-semantic.yaml
+name: magento1-semantic
+output: results/magento1-semantic.csv
+
+seeds: [1, 2, 3, 4, 5]
+
+traces:
+  - name: magento1-synth
+    generator: magento1
+    params:
+      n_requests: 100000
+
+cache_sizes: ["5%", "10%"]
+
+engine:
+  warmup: 0.1
+  hit_cost_ms: 0.5
+
+policies:
+  - lru
+  - {name: semantic, label: sem-0.95, params: {threshold: 0.95}}
+  - {name: semantic, label: sem-0.85, params: {threshold: 0.85}}
+  - {name: semantic, label: sem-0.75, params: {threshold: 0.75}}
+  - {name: semantic, label: sem-0.60, params: {threshold: 0.60}}

@@ -1,0 +1,28 @@
+# Expérience de référence : politiques classiques sur la trace synthétique Magento 1.
+# Lancer : cachebench run experiments/magento1-baseline.yaml
+name: magento1-baseline
+output: results/magento1-baseline.csv
+
+seeds: [1, 2, 3, 4, 5]
+
+traces:
+  - name: magento1-synth
+    generator: magento1
+    params:
+      n_requests: 100000
+  # Trace réelle enregistrée par le module PHP (étape 4) :
+  # - name: boutique-reelle
+  #   path: traces/boutique.csv
+
+# Pourcentage du volume unique cachable de la trace, ou taille absolue (« 64MB »).
+cache_sizes: ["1%", "5%", "10%", "20%"]
+
+engine:
+  warmup: 0.1        # 10 % des requêtes servent à remplir le cache
+  hit_cost_ms: 0.5   # hypothèse, à calibrer sur Magento
+
+policies:
+  - lru
+  - lfu
+  - fifo
+  - opt              # borne haute (connaît le futur)

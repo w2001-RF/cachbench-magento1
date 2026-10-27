@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <Aicache_Benchmark>
+            <version>0.1.0</version>
+        </Aicache_Benchmark>
+    </modules>
+    <global>
+        <models>
+            <aicache>
+                <class>Aicache_Benchmark_Model</class>
+            </aicache>
+        </models>
+        <helpers>
+            <aicache>
+                <class>Aicache_Benchmark_Helper</class>
+            </aicache>
+        </helpers>
+        <events>
+            <!-- Purges : Magento vide le cache par tags quand un produit ou une catégorie change -->
+            <application_clean_cache>
+                <observers>
+                    <aicache_trace_purge>
+                        <class>aicache/observer</class>
+                        <method>logPurge</method>
+                    </aicache_trace_purge>
+                </observers>
+            </application_clean_cache>
+        </events>
+    </global>
+    <frontend>
+        <events>
+            <!-- Chaque page vitrine servie : clé, taille, temps de rendu, tags -->
+            <controller_front_send_response_before>
+                <observers>
+                    <aicache_trace_page>
+                        <class>aicache/observer</class>
+                        <method>logPage</method>
+                    </aicache_trace_page>
+                </observers>
+            </controller_front_send_response_before>
+        </events>
+    </frontend>
+    <adminhtml>
+        <acl>
+            <resources>
+                <admin>
+                    <children>
+                        <system>
+                            <children>
+                                <config>
+                                    <children>
+                                        <aicache translate="title">
+                                            <title>AI Cache Benchmark</title>
+                                        </aicache>
+                                    </children>
+                                </config>
+                            </children>
+                        </system>
+                    </children>
+                </admin>
+            </resources>
+        </acl>
+    </adminhtml>
+    <default>
+        <aicache>
+            <trace>
+                <enabled>0</enabled>
+                <file>var/aicache/trace.csv</file>
+            </trace>
+        </aicache>
+    </default>
+</config>

@@ -1,0 +1,34 @@
+# Étape 3 : éviction apprise (façon DRL-Cache) face au code officiel et aux références.
+# Prérequis : modèles entraînés sur une trace d'une AUTRE graine (1001) :
+#   cachebench train-drl models/drl-unit.json --sizes unit
+#   cachebench train-drl models/drl-unit-k64.json --sizes unit -k 64
+# Lancer : cachebench run experiments/magento1-learned.yaml
+name: magento1-learned
+output: results/magento1-learned.csv
+
+seeds: [1, 2, 3, 4, 5]
+
+traces:
+  - name: magento1-synth
+    generator: magento1
+    params:
+      n_requests: 100000
+
+cache_sizes: ["1%", "5%", "10%", "20%"]
+
+engine:
+  warmup: 0.1
+  hit_cost_ms: 0.5
+  sizes: unit
+  invalidation: lazy
+
+policies:
+  - lru
+  - lfu
+  - arc
+  - lirs
+  - lecar
+  - cacheus
+  - {name: drl, label: drl-k16, params: {model: models/drl-unit.json}}
+  - {name: drl, label: drl-k64, params: {model: models/drl-unit-k64.json}}
+  - opt

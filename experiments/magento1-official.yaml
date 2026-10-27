@@ -1,0 +1,32 @@
+# Étape 2 : code officiel de CACHEUS, LeCaR, ARC et LIRS face aux références.
+# Prérequis : scripts/fetch_vendor.sh puis pip install -e ".[official]"
+# Lancer : cachebench run experiments/magento1-official.yaml
+name: magento1-official
+output: results/magento1-official.csv
+
+seeds: [1, 2, 3, 4, 5]
+
+traces:
+  - name: magento1-synth
+    generator: magento1
+    params:
+      n_requests: 100000
+
+# En mode « unit », un pourcentage = part des clés uniques cachables.
+cache_sizes: ["1%", "5%", "10%", "20%"]
+
+engine:
+  warmup: 0.1
+  hit_cost_ms: 0.5
+  sizes: unit          # le code officiel compte des objets, pas des octets
+  invalidation: lazy   # le code officiel ne sait pas retirer une entrée : même règle pour tous
+
+policies:
+  - lru
+  - lfu
+  - fifo
+  - arc
+  - lirs
+  - lecar
+  - cacheus
+  - opt
