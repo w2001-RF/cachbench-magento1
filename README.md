@@ -15,6 +15,12 @@ pip install -e ".[dev,official]"
 pytest -q
 ```
 
+Sous Windows, avec PowerShell et Git installés :
+
+```powershell
+.\scripts\fetch_vendor.ps1
+```
+
 ## Utilisation
 
 ```bash
