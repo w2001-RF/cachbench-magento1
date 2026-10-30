@@ -1,4 +1,4 @@
-"""Ligne de commande : cachebench run | gen-trace | convert | stats | list."""
+"""Ligne de commande : cachebench run | gen-trace | train-drl | convert | stats | list | ui."""
 from __future__ import annotations
 
 import argparse
@@ -71,6 +71,12 @@ def _cmd_list(_a) -> int:
     return 0
 
 
+def _cmd_ui(a) -> int:
+    from .ui import serve
+    serve(a.root, a.port, open_browser=not a.no_browser)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="cachebench", description="Benchmark d'algorithmes de cache pour Magento")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -116,6 +122,12 @@ def main(argv: list[str] | None = None) -> int:
 
     l = sub.add_parser("list", help="lister les politiques disponibles")
     l.set_defaults(fn=_cmd_list)
+
+    u = sub.add_parser("ui", help="ouvrir l'interface web locale (expériences, traces, résultats, test Magento)")
+    u.add_argument("--port", type=int, default=8765)
+    u.add_argument("--root", default=".", help="dossier du projet (experiments/, results/, traces/)")
+    u.add_argument("--no-browser", action="store_true", help="ne pas ouvrir le navigateur")
+    u.set_defaults(fn=_cmd_ui)
 
     a = p.parse_args(argv)
     return a.fn(a)
