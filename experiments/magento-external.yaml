@@ -1,0 +1,34 @@
+# Traces externes : les 7 mois de magento_trace_*.csv (format timestamp,url,size,category).
+# Un motif ou un dossier dans `path` donne une trace par fichier (magento-2019_Dec...).
+# Formats lus : cachebench, magento, rees46, retailrocket, twitter, libcachesim, access_log
+# (détectés d'après le fichier, ou `format:`). Voir cachebench/traces/external.py.
+# Lancer : cachebench run experiments/magento-external.yaml
+name: magento-external
+output: results/magento-external.csv
+
+# La trace est la même pour toutes les graines : elles ne font varier que les politiques
+# aléatoires (lecar, cacheus, cacheus_pp).
+seeds: [1, 2, 3]
+
+traces:
+  - name: magento
+    path: "C:/Users/ULTRA PC/Downloads/input/magento_trace_*.csv"
+    # max_requests: 50000
+    # costs: {api: 350, product: 400}     # temps de rendu en ms, par catégorie ou par route
+    # uncacheable: []                     # par défaut panier et compte (donc la catégorie api)
+
+cache_sizes: ["1%", "5%", "10%", "20%"]
+
+engine:
+  warmup: 0.1
+  hit_cost_ms: 0.5
+  sizes: unit
+  invalidation: lazy
+
+policies:
+  - lru
+  - lfu
+  - lecar
+  - cacheus
+  - cacheus_pp
+  - opt

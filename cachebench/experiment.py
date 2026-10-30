@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+import glob
 import statistics
 from pathlib import Path
 from typing import Any
@@ -10,7 +11,7 @@ import yaml
 
 from .engine import EngineConfig, apply_size_mode, resolve_capacity, simulate, trace_stats
 from .policies import get_policy
-from .traces import Magento1Config, generate, read_csv
+from .traces import Magento1Config, generate, load_trace
 
 GENERATORS = {"magento1": (Magento1Config, generate)}
 
@@ -32,9 +33,30 @@ def _policy_specs(cfg: dict) -> list[tuple[str, str, dict]]:
     return specs
 
 
+TRACE_OPTIONS = ("format", "max_requests", "costs", "uncacheable", "options", "stable_sizes")
+
+
+def _expand_traces(specs: list[dict]) -> list[dict]:
+    """Un `path` qui désigne un dossier ou un motif (*.csv) donne une trace par fichier."""
+    out = []
+    for spec in specs:
+        path = spec.get("path")
+        if path is None or not (Path(path).is_dir() or any(c in str(path) for c in "*?[")):
+            out.append(spec)
+            continue
+        files = (sorted(p for p in Path(path).iterdir() if p.is_file()) if Path(path).is_dir()
+                 else sorted(Path(p) for p in glob.glob(str(path))))
+        if not files:
+            raise FileNotFoundError(f"aucune trace dans {path}")
+        for f in files:
+            name = f"{spec['name']}-{f.stem}" if spec.get("name") else f.stem
+            out.append({**spec, "path": str(f), "name": name})
+    return out
+
+
 def _load_trace(spec: dict, seed: int):
     if "path" in spec:
-        return list(read_csv(spec["path"]))
+        return load_trace(spec["path"], **{k: spec[k] for k in TRACE_OPTIONS if k in spec})
     gen = spec.get("generator")
     if gen not in GENERATORS:
         raise ValueError(f"générateur inconnu : {gen} (disponibles : {', '.join(GENERATORS)})")
@@ -46,7 +68,7 @@ def run(cfg: dict, progress=print) -> list[dict[str, Any]]:
     engine = EngineConfig(**(cfg.get("engine") or {}))
     seeds = cfg.get("seeds") or [1]
     rows: list[dict[str, Any]] = []
-    for tspec in cfg["traces"]:
+    for tspec in _expand_traces(cfg["traces"]):
         tname = tspec.get("name") or tspec.get("path") or tspec.get("generator")
         # Une trace sur fichier est la même pour toutes les graines : on la lit une fois.
         file_trace = _load_trace(tspec, seeds[0]) if "path" in tspec else None
