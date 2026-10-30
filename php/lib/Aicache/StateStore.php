@@ -35,9 +35,12 @@ class Aicache_StateStore
                 usleep(200);
             }
             try {
-                $state = apcu_fetch($this->name, $ok);
-                $state = call_user_func($fn, $ok ? $state : null);
-                apcu_store($this->name, $state);
+                // l'état est rangé en chaîne : avec PHP thread-safe (Apache sous Windows), confier
+                // un objet à APCu fait planter php7ts.dll ; une chaîne n'est que copiée
+                $raw = apcu_fetch($this->name, $ok);
+                $state = $ok && is_string($raw) ? unserialize($raw) : null;
+                $state = call_user_func($fn, $state === false ? null : $state);
+                apcu_store($this->name, serialize($state));
             } catch (Exception $e) {
                 apcu_delete($lock);
                 throw $e;

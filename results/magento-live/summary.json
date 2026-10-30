@@ -1,0 +1,100 @@
+[
+  {
+    "run": "unbounded",
+    "http_ok": "100.0%",
+    "page_ms_mean": 203.0,
+    "product_ms_p50": 206.0,
+    "product_ms_p95": 239.4,
+    "cache_accesses": 152451,
+    "hit_rate": 0.9887,
+    "byte_hit_rate": 0.9698,
+    "miss_rebuild_ms": 27.9,
+    "evictions": 0,
+    "used_MB": 74.3,
+    "stats": null
+  },
+  {
+    "run": "lru-8MB",
+    "http_ok": "99.9%",
+    "page_ms_mean": 189.4,
+    "product_ms_p50": 193.6,
+    "product_ms_p95": 216.5,
+    "cache_accesses": 153373,
+    "hit_rate": 0.9846,
+    "byte_hit_rate": 0.9616,
+    "miss_rebuild_ms": 38.0,
+    "evictions": 2716,
+    "used_MB": 8.0,
+    "stats": null
+  },
+  {
+    "run": "cacheus_pp-8MB",
+    "http_ok": "100.0%",
+    "page_ms_mean": 211.3,
+    "product_ms_p50": 210.6,
+    "product_ms_p95": 277.7,
+    "cache_accesses": 153354,
+    "hit_rate": 0.9849,
+    "byte_hit_rate": 0.9621,
+    "miss_rebuild_ms": 38.2,
+    "evictions": 2673,
+    "used_MB": 8.0,
+    "stats": {
+      "expert_weights": {
+        "lru": 0.3081,
+        "lfu": 0.3492,
+        "gdsf": 0.3427
+      },
+      "expert_evictions": {
+        "lru": 791,
+        "lfu": 973,
+        "gdsf": 909
+      },
+      "learning_rate": 0.1559,
+      "admission_samples": 2959,
+      "admission_rejections": 0
+    }
+  },
+  {
+    "run": "lru-16MB",
+    "http_ok": "100.0%",
+    "page_ms_mean": 188.9,
+    "product_ms_p50": 195.1,
+    "product_ms_p95": 217.2,
+    "cache_accesses": 152995,
+    "hit_rate": 0.9861,
+    "byte_hit_rate": 0.9645,
+    "miss_rebuild_ms": 33.6,
+    "evictions": 2207,
+    "used_MB": 16.0,
+    "stats": null
+  },
+  {
+    "run": "cacheus_pp-16MB",
+    "http_ok": "100.0%",
+    "page_ms_mean": 213.8,
+    "product_ms_p50": 215.2,
+    "product_ms_p95": 258.7,
+    "cache_accesses": 153073,
+    "hit_rate": 0.9863,
+    "byte_hit_rate": 0.9648,
+    "miss_rebuild_ms": 33.4,
+    "evictions": 2187,
+    "used_MB": 16.0,
+    "stats": {
+      "expert_weights": {
+        "lru": 0.3529,
+        "lfu": 0.3144,
+        "gdsf": 0.3327
+      },
+      "expert_evictions": {
+        "lru": 773,
+        "lfu": 698,
+        "gdsf": 716
+      },
+      "learning_rate": 0.7933,
+      "admission_samples": 2710,
+      "admission_rejections": 0
+    }
+  }
+]

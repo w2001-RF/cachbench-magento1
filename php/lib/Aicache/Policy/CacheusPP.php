@@ -17,6 +17,7 @@ class Aicache_Policy_CacheusPP implements Aicache_Policy_Interface
     protected $alg;
     protected $capacity;
     protected $byTag = array();
+    protected $tagsOf = array();   // tags de chaque clé résidente, pour la retirer de byTag à l'éviction
     protected $evictions = 0;
     protected $evicted = array();
 
@@ -33,7 +34,7 @@ class Aicache_Policy_CacheusPP implements Aicache_Policy_Interface
     {
         $key = $req->key;
         if (isset($this->alg->cache[$key]) && $this->alg->cache[$key] !== $req->size) {
-            $this->alg->drop($key);   // nouvelle version de la page
+            $this->drop($key);   // nouvelle version de la page
         }
         $cost = $req->costMs > 0 ? $req->costMs : null;
         if ($this->alg->get($key, $req->size, $req->kind, $cost)) {
@@ -44,14 +45,36 @@ class Aicache_Policy_CacheusPP implements Aicache_Policy_Interface
             $this->evictions += count($ev);
             foreach ($ev as $k) {
                 $this->evicted[] = $k;
+                $this->untag($k);
             }
             if (isset($this->alg->cache[$key])) {
+                $this->tagsOf[$key] = $req->tags;
                 foreach ($req->tags as $t) {
                     $this->byTag[$t][$key] = true;
                 }
             }
         }
         return false;
+    }
+
+    protected function drop($key)
+    {
+        $this->alg->drop($key);
+        $this->untag($key);
+    }
+
+    protected function untag($key)
+    {
+        if (!isset($this->tagsOf[$key])) {
+            return;
+        }
+        foreach ($this->tagsOf[$key] as $t) {
+            unset($this->byTag[$t][$key]);
+            if (empty($this->byTag[$t])) {
+                unset($this->byTag[$t]);
+            }
+        }
+        unset($this->tagsOf[$key]);
     }
 
     public function invalidate(array $tags)
@@ -66,7 +89,7 @@ class Aicache_Policy_CacheusPP implements Aicache_Policy_Interface
         $n = 0;
         foreach ($keys as $k => $_) {
             if (isset($this->alg->cache[$k])) {
-                $this->alg->drop($k);
+                $this->drop($k);
                 $n++;
             }
         }
