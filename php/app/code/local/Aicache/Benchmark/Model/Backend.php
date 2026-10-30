@@ -10,10 +10,11 @@
  *     <backend_options>
  *       <inner_backend>Zend_Cache_Backend_File</inner_backend>   (ou Cm_Cache_Backend_Redis)
  *       <inner_options><cache_dir>var/cache</cache_dir></inner_options>
- *       <policy>cacheus</policy>                 lru, lfu, fifo, drl, lecar, cacheus
+ *       <policy>cacheus</policy>                 lru, lfu, fifo, drl, lecar, cacheus, cacheus_pp
  *       <capacity>67108864</capacity>            octets (nombre d'entrées pour lecar et cacheus)
  *       <params><model>var/aicache/drl-bytes.json</model></params>
  *       <trace_file>var/aicache/cache-trace.csv</trace_file>   (facultatif)
+ *       <state_dir>var/aicache/state</state_dir>    (facultatif, sans APCu : partagé par Apache et la CLI)
  *     </backend_options>
  *   </cache>
  *
@@ -44,6 +45,7 @@ class Aicache_Benchmark_Model_Backend extends Zend_Cache_Backend implements Zend
         'params' => array(),
         'trace_file' => null,
         'state_name' => 'magento',
+        'state_dir' => null,   // sans APCu : dossier du fichier d'état (sinon le dossier temporaire de PHP)
     );
 
     public function __construct(array $options = array())
@@ -53,7 +55,11 @@ class Aicache_Benchmark_Model_Backend extends Zend_Cache_Backend implements Zend
         }
         $cls = $this->_options['inner_backend'];
         $this->inner = new $cls((array) $this->_options['inner_options']);
-        $this->store = new Aicache_StateStore($this->_options['state_name']);
+        $dir = $this->_options['state_dir'];
+        if ($dir && !is_dir($dir)) {
+            @mkdir($dir, 0777, true);
+        }
+        $this->store = new Aicache_StateStore($this->_options['state_name'], $dir ? $dir : null);
     }
 
     public function setDirectives($directives)

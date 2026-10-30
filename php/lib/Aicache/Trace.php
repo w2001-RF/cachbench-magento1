@@ -46,13 +46,14 @@ class Aicache_Trace
     /** Ajoute une ligne à un CSV de trace (crée l'en-tête si le fichier est vide). */
     public static function append($path, Aicache_Request $r)
     {
-        $new = !file_exists($path) || filesize($path) === 0;
         $f = fopen($path, 'a');
         if (!$f) {
             return false;
         }
         if (flock($f, LOCK_EX)) {
-            if ($new) {
+            // taille lue sous verrou : filesize() garde sa valeur en cache pendant toute la requête
+            $st = fstat($f);
+            if ($st['size'] === 0) {
                 fputcsv($f, self::$columns, ',', '"', self::esc());
             }
             fputcsv($f, array(

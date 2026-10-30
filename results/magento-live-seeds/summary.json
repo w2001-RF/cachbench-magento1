@@ -1,0 +1,62 @@
+[
+  {
+    "run": "lru-r1",
+    "policy": "lru",
+    "failed": 8,
+    "hit_rate": 0.9845917801064212,
+    "byte_hit_rate": 0.9616266944065036,
+    "page_ms_mean": 106.72895362396957,
+    "product_ms_p50": 104.69005000777543,
+    "product_ms_p95": 129.1716499836184
+  },
+  {
+    "run": "lru-r2",
+    "policy": "lru",
+    "failed": 8,
+    "hit_rate": 0.9845913777005896,
+    "byte_hit_rate": 0.9616278494186402,
+    "page_ms_mean": 109.21888692473294,
+    "product_ms_p50": 106.26089997822419,
+    "product_ms_p95": 136.54392503667623
+  },
+  {
+    "run": "lru-r3",
+    "policy": "lru",
+    "failed": 4,
+    "hit_rate": 0.9845738401027976,
+    "byte_hit_rate": 0.9615946719106807,
+    "page_ms_mean": 109.19004692637827,
+    "product_ms_p50": 107.19170002266765,
+    "product_ms_p95": 135.47867501620203
+  },
+  {
+    "run": "cacheus_pp-s1",
+    "policy": "cacheus_pp",
+    "failed": 4,
+    "hit_rate": 0.9848188434149777,
+    "byte_hit_rate": 0.9620451867936195,
+    "page_ms_mean": 117.69850992431748,
+    "product_ms_p50": 115.19059992861003,
+    "product_ms_p95": 144.76657504565082
+  },
+  {
+    "run": "cacheus_pp-s2",
+    "policy": "cacheus_pp",
+    "failed": 4,
+    "hit_rate": 0.9847866346705618,
+    "byte_hit_rate": 0.9619868949654405,
+    "page_ms_mean": 120.85342959969421,
+    "product_ms_p50": 118.62955003743991,
+    "product_ms_p95": 150.16310007194988
+  },
+  {
+    "run": "cacheus_pp-s3",
+    "policy": "cacheus_pp",
+    "failed": 4,
+    "hit_rate": 0.9848352251204953,
+    "byte_hit_rate": 0.9620746938886786,
+    "page_ms_mean": 116.8668841237959,
+    "product_ms_p50": 114.61654998129234,
+    "product_ms_p95": 144.90682497853413
+  }
+]

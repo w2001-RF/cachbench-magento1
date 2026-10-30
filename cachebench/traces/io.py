@@ -33,6 +33,8 @@ def write_csv(requests: Iterable[Request], path: str | Path) -> int:
 def read_csv(path: str | Path) -> Iterator[Request]:
     with Path(path).open(newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
+            if row["ts"] == "ts":
+                continue  # en-tête répété (journaux écrits par une ancienne version du module PHP)
             tags = row.get("tags") or ""
             yield Request(
                 ts=float(row["ts"]),

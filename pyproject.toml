@@ -19,3 +19,6 @@ cachebench = "cachebench.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["cachebench*"]
+
+[tool.setuptools.package-data]
+"cachebench.ui" = ["static/*"]

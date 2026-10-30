@@ -1,11 +1,12 @@
 # cachebench
 
 Benchmark d'algorithmes de cache pilotés par l'IA, appliqué aux boutiques Magento.
-L'architecture complète est décrite dans le document « Architecture — Benchmark de cache IA pour Magento ».
+L'architecture est décrite dans [docs/architecture.md](docs/architecture.md).
 
-État : **étapes 1 à 3** (cœur Python, politiques de référence, générateur Magento 1,
+État : **étapes 1 à 4** (cœur Python, politiques de référence, générateur Magento 1,
 code officiel de CACHEUS, LeCaR, ARC et LIRS, éviction apprise façon DRL-Cache,
-cache sémantique façon GPTCache / Upstash).
+cache sémantique façon GPTCache / Upstash, CACHEUS++, module PHP pour Magento 1),
+avec une interface web locale pour tout lancer sans la ligne de commande.
 
 ## Installation
 
@@ -21,17 +22,49 @@ Sous Windows, avec PowerShell et Git installés :
 .\scripts\fetch_vendor.ps1
 ```
 
-## Utilisation
+## Interface web
+
+```bash
+cachebench ui            # ouvre http://127.0.0.1:8765/ dans le navigateur
+```
+
+Lancée depuis la racine du projet (ou avec `--root`), elle donne accès, sans taper de
+commande, à tout ce que fait la ligne de commande :
+
+| Onglet | Ce qu'on y fait |
+| --- | --- |
+| **Expérience** | partir d'un YAML d'`experiments/` ou d'une expérience vide ; choisir les traces (synthétique ou fichier, motif, dossier), cocher les politiques (avec variantes et paramètres), les tailles de cache, les graines et le moteur ; lancer, suivre l'avancement, lire le tableau et le graphique ; voir ou modifier le YAML, l'enregistrer dans `experiments/` |
+| **Traces** | statistiques d'un fichier, génération d'une trace synthétique, conversion d'un jeu externe au format commun, entraînement du modèle `drl` |
+| **Résultats** | tous les `*_summary.csv` et `*.http.csv` de `results/`, en tableau (moyenne ± écart-type, meilleur hit rate en gras) et en graphique par taille de cache |
+| **Test Magento** | lit la politique configurée dans `app/etc/local.xml`, puis rejoue une trace en vraies requêtes HTTP sur la boutique (`scripts/http_replay.py`) : temps moyen, médiane, p95 et échecs par type de page |
+| **Tâches** | toutes les tâches lancées, leur commande et leur journal complet ; annulation |
+
+Chaque action exécute la commande `cachebench` correspondante (affichée au-dessus de son
+journal) : les résultats sont les mêmes qu'en ligne de commande et s'écrivent aux mêmes
+endroits. L'interface n'utilise que la bibliothèque standard de Python, n'écoute que sur
+127.0.0.1 et n'écrit que dans le dossier du projet. Un lien `#results=results/x_summary.csv`
+ouvre directement un résultat.
+
+Le test Magento ne modifie pas la boutique : pour comparer deux politiques, changez
+`<policy>` dans `local.xml`, videz le cache de Magento, puis relancez le test en nommant le
+fichier de sortie d'après la politique (`results/http/lru-8MB.http.csv`).
+
+## Utilisation en ligne de commande
 
 ```bash
 cachebench list                                         # politiques disponibles
 cachebench gen-trace traces/synth.csv -n 100000 --seed 1
 cachebench stats traces/synth.csv
+cachebench stats magento_trace_2019_Dec.csv             # tout format externe, détecté
+cachebench convert cluster001.csv traces/twitter.csv    # vers le format commun (rejeu PHP)
+cachebench run experiments/magento-external.yaml        # traces externes (motif *.csv)
 cachebench run experiments/magento1-baseline.yaml       # écrit results/*.csv
 cachebench run experiments/magento1-official.yaml       # étape 2 : CACHEUS, LeCaR, ARC, LIRS
 cachebench train-drl models/drl-unit.json --sizes unit  # étape 3 : entraînement (graine 1001)
 cachebench run experiments/magento1-learned.yaml        # étape 3 : éviction apprise
 cachebench run experiments/magento1-semantic.yaml       # étape 3 : cache sémantique
+cachebench ui                                           # interface web (voir ci-dessus)
+python scripts/http_replay.py traces/mar2020.csv http://127.0.0.1/magento --out results/http/lru.http.csv -n 2000 -c 4
 ```
 
 ## Code officiel (étape 2)
@@ -62,6 +95,29 @@ est un bandit contextuel, fait hors ligne.
 - C'est un petit réseau numpy (10 → 32 → 32 → 1) exporté en JSON (`models/`), que le module
   PHP pourra évaluer sans dépendance.
 - Plus K est grand, meilleur est le hit rate, mais plus la décision coûte (voir `overhead_us`).
+
+## CACHEUS++
+
+`cacheus_pp` exécute **sans modification** `algorithms/cacheus_pp.py` du projet
+cache_benchmark, copié dans `cachebench/_cache_benchmark/` avec les deux modules qu'il
+importe (`base.py`, `models.py`). L'adaptateur (`cachebench/policies/cacheus_pp.py`)
+l'appelle comme son runner : `get`, puis en cas de miss `should_cache` et `put`.
+
+- trois experts (LRU, LFU, GDSF) arbitrés par minimisation du regret (LeCaR / CACHEUS),
+  une couche REINFORCE, et une admission apprise par régression logistique ;
+- la route Magento (`kind`) sert de catégorie et `cost_ms` de coût de miss pour GDSF ;
+- octets ou unités ; en unités, il faut au moins 10 objets de capacité
+  (`max_object_fraction` = 0,1) ;
+- une purge eager retire l'entrée via `_evict`, sans compter comme une éviction choisie ;
+- portage PHP pour Magento (`lib/Aicache/CacheusPP/`) : même générateur que
+  `np.random.default_rng` (PCG64, `Pcg64.php`) et mêmes calculs dans l'ordre de numpy, y
+  compris le `dgemv` d'OpenBLAS pour `theta @ state`. 100 % de hits identiques sur 100 000
+  requêtes réelles, environ 20 µs par requête en PHP 7.1.
+
+Le code d'origine fait repartir à la version 1 une clé réinsérée : ses anciennes entrées de
+tas redeviennent « valides » et le tas ne passe plus sous le seuil de compactage, recompacté
+alors à chaque accès. Sans effet sur les décisions, mais coûteux ; le portage PHP compacte
+donc plus rarement.
 
 ## Cache sémantique (étape 3)
 
@@ -110,10 +166,41 @@ Un algorithme qui gère lui-même son stockage (code officiel enveloppé) hérit
 `CachePolicy` et implémente `access`, `invalidate`, `used_bytes` et `__contains__`.
 Le moteur vérifie après chaque requête que la capacité n'est jamais dépassée.
 
-## Ajouter un jeu de données
+## Jeux de données externes
 
-Écrire un lecteur qui produit des `Request` (ou convertir au CSV ci-dessus), puis le
-déclarer dans le YAML avec `path:`.
+`path:` accepte, en plus du format commun, les formats du projet cache_benchmark, lus par
+son `loaders.py` copié sans modification (`cachebench/_cache_benchmark/`). Le format est
+détecté d'après le nom et la première ligne du fichier, ou forcé par `format:`.
+
+| `format` | Fichiers |
+| --- | --- |
+| `cachebench` | CSV commun ci-dessus (générateur, module PHP) |
+| `magento` | `timestamp,url,size,category` (`magento_trace_*.csv`) |
+| `rees46` (`kaggle`) | événements e-commerce REES46 / Kaggle, `.csv` ou `.csv.gz` ; tailles synthétiques |
+| `retailrocket` | `events.csv` de Retailrocket |
+| `twitter` | traces de production Twitter (`timestamp,key,key_size,value_size,client,op,ttl`) |
+| `libcachesim` | oracleGeneral binaire (`.bin`) ou CSV `# time, object, size, ...` |
+| `access_log` | journaux Apache / Nginx / Varnish (Common ou Combined Log Format) |
+
+```yaml
+traces:
+  - name: magento
+    path: "C:/Users/moi/Downloads/input/magento_trace_*.csv"   # motif ou dossier : une trace par fichier
+    max_requests: 50000                  # facultatif
+    costs: {api: 350, product: 400}      # facultatif : temps de rendu (ms) par catégorie ou route
+    uncacheable: []                      # facultatif : par défaut panier et compte
+    options: {include_writes: true}      # facultatif : passé au lecteur d'origine
+```
+
+Conversion vers `Request` : `ts` part de 0 ; la catégorie devient une route Magento 1
+(`product` → `catalog_product_view`, `api` → `checkout_cart_index`, donc non cachable) ;
+une catégorie inconnue (`kv`, `object`) reste telle quelle. Ces jeux n'ont pas de temps de
+rendu : `cost_ms` vaut la médiane du générateur pour la route (400 ms pour un produit), 0
+pour les autres. La latence simulée n'y vaut donc que comme ordre de grandeur. Ils ne
+contiennent ni purge ni tags.
+
+Pour un autre format : écrire un lecteur qui produit des `Request`, ou convertir au CSV
+commun.
 
 ## Métriques
 
@@ -136,15 +223,21 @@ Surcharge possible dans le YAML (`params:`) ou en ligne de commande (`--params '
 
 | Dossier | Contenu |
 | --- | --- |
-| `cachebench/traces/` | `Request`, lecture/écriture CSV, générateur Magento 1 |
-| `cachebench/policies/` | interface, registre, LRU, LFU, FIFO, OPT, adaptateurs du code officiel, `drl`, `semantic` |
+| `cachebench/traces/` | `Request`, lecture/écriture CSV, générateur Magento 1, traces externes |
+| `cachebench/_cache_benchmark/` | fichiers du projet cache_benchmark, non modifiés (CACHEUS++, lecteurs) |
+| `cachebench/policies/` | interface, registre, LRU, LFU, FIFO, OPT, adaptateurs du code officiel, `drl`, `semantic`, `cacheus_pp` |
 | `cachebench/ml/` | réseau numpy et export JSON |
 | `models/` | modèles entraînés |
 | `scripts/fetch_vendor.sh` | récupère le code officiel à un commit figé |
 | `vendor/` | code officiel non modifié |
 | `cachebench/engine.py` | simulation, capacité, métriques |
 | `cachebench/experiment.py` | expériences YAML, résumé moyenne ± écart-type |
+| `cachebench/cli.py` | ligne de commande `cachebench` |
+| `cachebench/ui/` | interface web : `server.py` (API JSON, tâches en sous-processus) et `static/` (page, script, styles) |
 | `experiments/` | configurations d'expériences |
+| `scripts/http_replay.py` | rejoue une trace en requêtes HTTP sur une boutique Magento et mesure les temps |
+| `results/` | résultats des expériences ; `magento-live*/` : tests HTTP sur la boutique locale |
+| `docs/architecture.md` | architecture du projet |
 | `php/` | module Magento 1 et bibliothèque PHP (même arborescence que Magento) |
 | `tests/` | tests, dont la conformité PHP / Python |
 
@@ -155,7 +248,7 @@ Le dossier `php/` a la même arborescence qu'une installation Magento 1.9 / Open
 
 - `lib/Aicache/` : bibliothèque sans dépendance, nommée à la façon Magento
   (`Aicache_Policy_Lru` → `lib/Aicache/Policy/Lru.php`). Politiques `lru`, `fifo`, `lfu`,
-  `drl` (lit le même JSON que Python), `semantic`, et portages de `lecar` et `cacheus`
+  `drl` (lit le même JSON que Python), `semantic`, et portages de `lecar`, `cacheus` et `cacheus_pp`
   (même générateur aléatoire que numpy, poids en float32 comme numpy).
 - `app/code/local/Aicache/Benchmark/` : module `Aicache_Benchmark`.
   - **Journal des requêtes** : chaque page vitrine servie est écrite dans
@@ -272,7 +365,8 @@ le bloc `<cache>` existant ; gardez-en une copie) :
         <inner_options>
             <cache_dir>C:/wamp64/www/magento/var/cache_aicache</cache_dir>
         </inner_options>
-        <policy>cacheus</policy>            <!-- lru, lfu, fifo, drl, lecar, cacheus -->
+        <policy>cacheus</policy>            <!-- lru, lfu, fifo, drl, lecar, cacheus, cacheus_pp -->
+        <state_dir>C:/wamp64/www/magento/var/aicache/state</state_dir>  <!-- sans APCu : même état pour Apache et la CLI -->
         <capacity>2000</capacity>           <!-- octets ; nombre d'entrées pour lecar et cacheus -->
         <!-- pour drl : <policy>drl</policy> <capacity>67108864</capacity>
              <params><model>C:/wamp64/www/magento/var/aicache/models/drl-bytes.json</model></params> -->

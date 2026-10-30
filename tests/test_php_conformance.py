@@ -49,6 +49,8 @@ CASES = [
     ("lecar", {}, "unit", "lazy", 0.999),
     ("cacheus", {}, "unit", "lazy", 0.999),
     ("cacheus", {}, "unit", "eager", 0.999),
+    ("cacheus_pp", {"seed": 1}, "bytes", "eager", 1.0),
+    ("cacheus_pp", {"seed": 3}, "unit", "lazy", 1.0),
 ]
 
 
@@ -82,6 +84,32 @@ def test_mersenne_twister_matches_numpy():
     [np.random.rand() for _ in range(5)]
     choices = [0 if np.random.choice(["Increase", "Decrease"]) == "Increase" else 1 for _ in range(5)]
     assert out[5:] == choices
+
+
+def test_pcg64_matches_numpy_default_rng():
+    out = json.loads(subprocess.run([PHP, str(ROOT / "tests/php/pcg_check.php")], capture_output=True,
+                                    text=True, check=True).stdout)
+    for o in out:
+        seed = o["seed"]
+        assert o["words"] == np.random.SeedSequence(seed).generate_state(8).tolist()
+        assert o["raw"] == [f"{int(x):016x}" for x in np.random.PCG64(seed).random_raw(4)]
+        g = np.random.default_rng(seed)
+        g.bit_generator.random_raw(4)
+        assert [float(x) for x in o["random"]] == [g.random() for _ in range(4)]
+        assert o["choice"] == [int(g.choice(3, p=np.array([0.2, 0.5, 0.3]))) for _ in range(20)]
+
+
+def test_theta_state_product_matches_numpy():
+    # CACHEUS++ calcule theta @ state ; numpy passe par le dgemv d'OpenBLAS, que PHP reproduit.
+    rng = np.random.default_rng(0)
+    theta = rng.uniform(-5, 5, (4000, 3, 5))
+    state = np.column_stack([np.ones(4000), rng.random((4000, 4))])
+    pairs = [[theta[i, e].tolist(), state[i].tolist()] for i in range(4000) for e in range(3)]
+    out = json.loads(subprocess.run([PHP, str(ROOT / "tests/php/gemv_check.php")], input=json.dumps(pairs),
+                                    capture_output=True, text=True, check=True).stdout)
+    expected = [float(v) for i in range(4000) for v in theta[i] @ state[i]]
+    agree = sum(float(a) == b for a, b in zip(out, expected)) / len(expected)
+    assert agree >= 0.999, f"{agree:.4%}"
 
 
 def test_rounding_matches_python_and_numpy():
