@@ -24,6 +24,45 @@ def test_mlp_json_roundtrip(tmp_path):
     assert np.allclose(back.predict(X[:10]), net.predict(X[:10]))
 
 
+
+def _gpu_or_skip():
+    from cachebench.ml.device import get_xp
+    try:
+        get_xp("gpu")
+    except RuntimeError as e:
+        pytest.skip(str(e))
+
+
+def test_mlp_device_choice():
+    from cachebench.ml.device import get_xp
+    assert get_xp("cpu")[0] is np
+    assert get_xp("auto")[0] is not None          # GPU, ou repli sur numpy sans CuPy
+    with pytest.raises(ValueError):
+        get_xp("tpu")
+
+
+def test_mlp_gpu_matches_cpu():
+    _gpu_or_skip()
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(3000, 4))
+    y = X[:, 0] * 2 - np.abs(X[:, 1])
+    cpu, gpu = MLP([4, 16, 16, 1], seed=1), MLP([4, 16, 16, 1], seed=1)
+    lc = cpu.fit(X, y, epochs=3, batch=64, seed=2)
+    lg = gpu.fit(X, y, epochs=3, batch=64, seed=2, device="gpu")
+    assert all(isinstance(W, np.ndarray) for W in gpu.W + gpu.b)   # ramenés de la carte : exportables
+    assert np.allclose(lc, lg, rtol=1e-9)
+    for a, b in zip(cpu.W + cpu.b, gpu.W + gpu.b):
+        assert np.allclose(a, b, atol=1e-9)
+
+
+def test_train_drl_on_gpu(tmp_path):
+    _gpu_or_skip()
+    trace = apply_size_mode(generate(n_requests=4000, seed=1001), "unit")
+    info = train(trace, 150, tmp_path / "g.json", epochs=1, horizon=500, hidden=64, batch=1024,
+                 device="gpu", log=lambda *_: None)
+    net, meta = MLP.load(tmp_path / "g.json")
+    assert meta["decisions"] == info["decisions"] > 0 and net.W[0].shape == (len(FEATURES), 64)
+
 @pytest.fixture(scope="module")
 def drl_model(tmp_path_factory):
     path = tmp_path_factory.mktemp("m") / "drl.json"

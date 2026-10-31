@@ -103,7 +103,7 @@ class DRLEviction(LRU):
 
 def train(trace: Sequence[Request], capacity: int, out: str | Path, *, k: int = 16,
           horizon: int = 5000, hidden: int = 32, epochs: int = 8, seed: int = 0,
-          log=print, meta: dict | None = None) -> dict:
+          batch: int = 512, device: str = "cpu", log=print, meta: dict | None = None) -> dict:
     """Entraîne le réseau sur `trace` (déjà en mode de taille voulu) et l'écrit en JSON."""
     played = [r for r in trace if r.op == GET and r.cacheable]
     positions: dict[str, list[int]] = {}
@@ -134,7 +134,7 @@ def train(trace: Sequence[Request], capacity: int, out: str | Path, *, k: int = 
     y = np.concatenate(samples_y)
     log(f"{len(samples_X)} décisions d'éviction, {len(X)} candidats notés")
     net = MLP([len(FEATURES), hidden, hidden, 1], seed=seed, features=FEATURES)
-    losses = net.fit(X, y, epochs=epochs, seed=seed, log=log)
+    losses = net.fit(X, y, epochs=epochs, batch=batch, seed=seed, log=log, device=device)
     info = {"k": k, "horizon": horizon, "capacity": capacity, "decisions": len(samples_X),
             "final_loss": losses[-1], **(meta or {})}
     net.save(out, **info)

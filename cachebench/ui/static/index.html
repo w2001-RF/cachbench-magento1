@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cachebench</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">cachebench <span class="muted" id="root"></span></div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="experiment" aria-selected="true">Expérience</button>
+    <button role="tab" data-tab="traces">Traces</button>
+    <button role="tab" data-tab="results">Résultats</button>
+    <button role="tab" data-tab="magento">Test Magento</button>
+    <button role="tab" data-tab="jobs">Tâches <span class="badge" id="running" hidden></span></button>
+  </nav>
+</header>
+
+<main>
+<!-- ============================== Expérience ============================== -->
+<section id="tab-experiment" class="tab">
+  <div class="intro">
+    <h1>Comparer des politiques de cache</h1>
+    <p>Choisissez des traces, des politiques et des tailles de cache, puis lancez. Chaque
+      combinaison est simulée pour chaque graine ; le résultat donne la moyenne ± l'écart-type.</p>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <label class="grow">Partir de
+        <select id="exp-source"><option value="">Nouvelle expérience</option></select>
+      </label>
+      <label class="grow">Nom
+        <input id="exp-name" value="mon-experience" spellcheck="false">
+      </label>
+      <label class="grow">Fichier de résultats
+        <input id="exp-output" placeholder="results/mon-experience.csv" spellcheck="false">
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>1. Traces</h2>
+    <p class="hint">Une trace synthétique Magento 1 change à chaque graine. Une trace sur fichier
+      peut être un motif (<code>data/*.csv</code>) ou un dossier : une trace par fichier.</p>
+    <div id="exp-traces"></div>
+    <button class="ghost" id="exp-add-trace">+ Ajouter une trace</button>
+  </div>
+
+  <div class="card">
+    <h2>2. Politiques</h2>
+    <p class="hint">Cochez celles à comparer. <code>opt</code> connaît le futur : c'est un plafond.
+      Paramètres facultatifs en JSON, par exemple <code>{"k": 64}</code>.</p>
+    <div id="exp-policies" class="policies"></div>
+    <p class="warn" id="exp-official-warn" hidden>Les politiques du code officiel (cacheus, lecar,
+      arc, lirs) comptent des objets et ne savent pas retirer une entrée : réglez le moteur sur
+      <b>unités</b> et <b>paresseuse</b> pour une comparaison valable.
+      <button class="link" id="exp-fix-engine">Régler maintenant</button></p>
+  </div>
+
+  <div class="card">
+    <h2>3. Tailles, graines et moteur</h2>
+    <div class="row">
+      <label class="grow">Tailles de cache
+        <input id="exp-sizes" value="1%, 5%, 10%, 20%" spellcheck="false">
+        <small>% du volume unique cachable, ou « 64MB », ou un nombre</small>
+      </label>
+      <label class="grow">Graines
+        <input id="exp-seeds" value="1, 2, 3" spellcheck="false">
+        <small>une simulation par graine</small>
+      </label>
+    </div>
+    <div class="row">
+      <label>Tailles des objets
+        <select id="exp-engine-sizes"><option value="bytes">octets</option><option value="unit">unités (1 objet = 1)</option></select>
+      </label>
+      <label>Purge
+        <select id="exp-engine-inval"><option value="eager">immédiate (eager)</option><option value="lazy">paresseuse (lazy)</option></select>
+      </label>
+      <label>Chauffe
+        <input id="exp-engine-warmup" type="number" min="0" max="0.9" step="0.05" value="0.1">
+        <small>part des requêtes non mesurée</small>
+      </label>
+      <label>Coût d'un hit (ms)
+        <input id="exp-engine-hit" type="number" min="0" step="0.1" value="0.5">
+      </label>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="primary" id="exp-run">Lancer l'expérience</button>
+    <button id="exp-yaml-toggle">Voir le YAML</button>
+    <button id="exp-save">Enregistrer dans experiments/</button>
+    <span class="muted" id="exp-count"></span>
+  </div>
+
+  <div class="card" id="exp-yaml-card" hidden>
+    <h2>YAML de l'expérience</h2>
+    <p class="hint">Modifiable : « Lancer ce YAML » l'exécute tel quel, « Reprendre dans le
+      formulaire » le recharge dans les champs ci-dessus.</p>
+    <textarea id="exp-yaml" rows="18" spellcheck="false"></textarea>
+    <div class="actions">
+      <button class="primary" id="exp-run-yaml">Lancer ce YAML</button>
+      <button id="exp-yaml-to-form">Reprendre dans le formulaire</button>
+    </div>
+  </div>
+
+  <div id="exp-job"></div>
+</section>
+
+<!-- ============================== Traces ============================== -->
+<section id="tab-traces" class="tab" hidden>
+  <div class="intro">
+    <h1>Préparer les traces</h1>
+    <p>Inspecter un fichier, générer une trace synthétique, convertir un jeu externe au format
+      commun (rejouable par le module PHP), ou entraîner l'éviction apprise.</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h2>Statistiques d'une trace</h2>
+      <label>Fichier <input id="st-trace" list="files" placeholder="traces/synth.csv" spellcheck="false"></label>
+      <div class="row">
+        <label class="grow">Format <select id="st-format" class="formats"></select></label>
+        <label class="grow">Lire au plus <input id="st-n" type="number" min="1" placeholder="tout"></label>
+      </div>
+      <button class="primary" id="st-run">Analyser</button>
+      <div id="st-job"></div>
+    </div>
+
+    <div class="card">
+      <h2>Générer une trace synthétique Magento 1</h2>
+      <label>Fichier à écrire <input id="gen-out" value="traces/synth.csv" spellcheck="false"></label>
+      <div class="row">
+        <label class="grow">Requêtes <input id="gen-n" type="number" min="100" value="100000"></label>
+        <label class="grow">Graine <input id="gen-seed" type="number" value="1"></label>
+      </div>
+      <label>Paramètres du générateur (JSON, facultatif)
+        <input id="gen-params" placeholder='{"product_alpha": 1.1}' spellcheck="false"></label>
+      <button class="primary" id="gen-run">Générer</button>
+      <div id="gen-job"></div>
+    </div>
+
+    <div class="card">
+      <h2>Convertir au format commun</h2>
+      <label>Trace d'origine <input id="cv-trace" list="files" placeholder="data/external/twitter/cluster001.csv" spellcheck="false"></label>
+      <label>Fichier à écrire <input id="cv-out" value="traces/converted.csv" spellcheck="false"></label>
+      <div class="row">
+        <label class="grow">Format <select id="cv-format" class="formats"></select></label>
+        <label class="grow">Lire au plus <input id="cv-n" type="number" min="1" placeholder="tout"></label>
+      </div>
+      <button class="primary" id="cv-run">Convertir</button>
+      <div id="cv-job"></div>
+    </div>
+
+    <div class="card">
+      <h2>Entraîner l'éviction apprise (drl)</h2>
+      <label>Modèle à écrire <input id="tr-out" value="models/drl-bytes.json" spellcheck="false"></label>
+      <label>Trace d'entraînement <input id="tr-trace" list="files" placeholder="vide : trace synthétique" spellcheck="false"></label>
+      <div class="row">
+        <label class="grow">Tailles <select id="tr-sizes"><option value="bytes">octets</option><option value="unit">unités</option></select></label>
+        <label class="grow">Capacité <input id="tr-capacity" value="10%"></label>
+      </div>
+      <div class="row">
+        <label class="grow">Candidats K <input id="tr-k" type="number" min="2" value="16"></label>
+        <label class="grow">Époques <input id="tr-epochs" type="number" min="1" value="8"></label>
+        <label class="grow">Graine <input id="tr-seed" type="number" value="1001"></label>
+      </div>
+      <div class="row">
+        <label class="grow">Calcul
+          <select id="tr-device"><option value="cpu">processeur</option><option value="gpu">carte graphique (GPU)</option><option value="auto">GPU s'il est disponible</option></select></label>
+        <label class="grow">Neurones par couche <input id="tr-hidden" type="number" min="4" value="32"></label>
+        <label class="grow">Taille des lots <input id="tr-batch" type="number" min="16" value="512"></label>
+      </div>
+      <small class="hint">Le GPU (CuPy, carte NVIDIA) n'accélère qu'un réseau plus gros : à partir
+        d'environ 128 neurones par couche. Avec 32, le processeur est plus rapide.</small>
+      <button class="primary" id="tr-run">Entraîner</button>
+      <div id="tr-job"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== Résultats ============================== -->
+<section id="tab-results" class="tab" hidden>
+  <div class="intro">
+    <h1>Résultats enregistrés</h1>
+    <p>Résumés d'expériences (<code>*_summary.csv</code>) et tests HTTP sur Magento
+      (<code>*.http.csv</code>) du dossier <code>results/</code>.</p>
+  </div>
+  <div class="split">
+    <div class="card list-card">
+      <div class="row">
+        <input id="res-filter" placeholder="Filtrer…" class="grow" spellcheck="false">
+        <button class="ghost" id="res-refresh" title="Actualiser">↻</button>
+      </div>
+      <ul id="res-list" class="filelist"></ul>
+    </div>
+    <div id="res-view" class="grow"><div class="card empty">Choisissez un résultat dans la liste.</div></div>
+  </div>
+</section>
+
+<!-- ============================== Magento ============================== -->
+<section id="tab-magento" class="tab" hidden>
+  <div class="intro">
+    <h1>Tester la boutique Magento</h1>
+    <p>Rejoue une trace en vraies requêtes HTTP sur la boutique et mesure le temps de chaque page.
+      La politique testée est celle de <code>app/etc/local.xml</code> : pour en changer, modifiez
+      <code>&lt;policy&gt;</code> puis videz le cache de Magento avant de relancer.</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h2>Configuration actuelle du cache</h2>
+      <div class="row">
+        <label class="grow">Dossier de Magento <input id="mg-root" value="C:/wamp64/www/magento" spellcheck="false"></label>
+        <button id="mg-read" class="align-end">Lire</button>
+      </div>
+      <div id="mg-config" class="muted">—</div>
+    </div>
+    <div class="card">
+      <h2>Lancer un test</h2>
+      <label>Trace <input id="ht-trace" list="files" value="traces/mar2020.csv" spellcheck="false"></label>
+      <label>Adresse de la boutique <input id="ht-base" value="http://127.0.0.1/magento" spellcheck="false"></label>
+      <div class="row">
+        <label class="grow">Requêtes <input id="ht-n" type="number" min="1" value="2000"></label>
+        <label class="grow">Visiteurs simultanés <input id="ht-c" type="number" min="1" max="64" value="4"></label>
+        <label class="grow">Ids produits <input id="ht-products" value="1-10000"></label>
+      </div>
+      <label>Fichier de sortie <input id="ht-out" placeholder="results/http/lru-8MB.http.csv" spellcheck="false">
+        <small>vide : results/http/&lt;date&gt;.http.csv — nommez-le d'après la politique pour comparer</small></label>
+      <button class="primary" id="ht-run">Lancer le test</button>
+    </div>
+  </div>
+  <div id="ht-job"></div>
+</section>
+
+<!-- ============================== Tâches ============================== -->
+<section id="tab-jobs" class="tab" hidden>
+  <div class="intro">
+    <h1>Tâches</h1>
+    <p>Chaque action lance la commande indiquée ; son journal complet est ici.</p>
+  </div>
+  <div class="split">
+    <div class="card list-card"><ul id="jobs-list" class="filelist"></ul></div>
+    <div id="jobs-view" class="grow"><div class="card empty">Aucune tâche sélectionnée.</div></div>
+  </div>
+</section>
+</main>
+
+<datalist id="files"></datalist>
+<div id="toast" role="status" hidden></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

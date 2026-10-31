@@ -12,6 +12,7 @@ avec une interface web locale pour tout lancer sans la ligne de commande.
 
 ```bash
 pip install -e ".[dev,official]"
+pip install -e ".[gpu]"        # facultatif : entraîner drl sur une carte NVIDIA (CUDA 13)
 ./scripts/fetch_vendor.sh      # code officiel de sylab/cacheus, commit figé
 pytest -q
 ```
@@ -61,6 +62,7 @@ cachebench run experiments/magento-external.yaml        # traces externes (motif
 cachebench run experiments/magento1-baseline.yaml       # écrit results/*.csv
 cachebench run experiments/magento1-official.yaml       # étape 2 : CACHEUS, LeCaR, ARC, LIRS
 cachebench train-drl models/drl-unit.json --sizes unit  # étape 3 : entraînement (graine 1001)
+cachebench train-drl models/drl-512.json --hidden 512 --batch 2048 --device gpu   # sur GPU
 cachebench run experiments/magento1-learned.yaml        # étape 3 : éviction apprise
 cachebench run experiments/magento1-semantic.yaml       # étape 3 : cache sémantique
 cachebench ui                                           # interface web (voir ci-dessus)
@@ -95,6 +97,35 @@ est un bandit contextuel, fait hors ligne.
 - C'est un petit réseau numpy (10 → 32 → 32 → 1) exporté en JSON (`models/`), que le module
   PHP pourra évaluer sans dépendance.
 - Plus K est grand, meilleur est le hit rate, mais plus la décision coûte (voir `overhead_us`).
+
+### Entraîner sur GPU
+
+`train-drl --device gpu` fait l'entraînement du réseau sur une carte NVIDIA avec
+[CuPy](https://cupy.dev), qui reprend l'API de numpy : même code, mêmes lots dans le même
+ordre, même Adam, en float64. Les poids obtenus diffèrent de ceux du processeur de moins de
+1e-14 (ordre des sommes) et s'exportent dans le même JSON, lu tel quel par le module PHP.
+`--device auto` prend le GPU s'il répond, sinon le processeur ; `cpu` reste la valeur par
+défaut et donne exactement les mêmes modèles qu'avant.
+
+```bash
+pip install -e ".[gpu]"           # cupy-cuda13x ; pour CUDA 12 : pip install cupy-cuda12x
+cachebench train-drl models/drl-512.json --sizes unit --hidden 512 --batch 2048 --device gpu
+```
+
+Le GPU n'aide que pour un réseau plus gros que celui par défaut. Mesures sur une RTX 4060
+(trace synthétique de 100 000 requêtes, 8 époques) :
+
+| Réseau | Processeur | GPU |
+| --- | --- | --- |
+| 32 neurones par couche, lots de 512 (défaut) | 8 s au total, réseau < 1 s | plus lent (lancement des calculs sur la carte) |
+| 512 neurones par couche, lots de 2048 | 153 s | 35 s |
+
+Seul l'entraînement du réseau passe sur la carte. La collecte des décisions d'éviction (une
+simulation) reste sur le processeur, comme l'évaluation du modèle pendant une expérience et
+dans Magento. Un réseau plus gros coûte donc plus cher à chaque éviction : avec 512 neurones,
+le calcul en PHP est environ 200 fois plus long qu'avec 32 (268 000 multiplications par
+candidat au lieu de 1 400). Vérifiez `overhead_us` avant de
+le déployer.
 
 ## CACHEUS++
 
@@ -236,6 +267,8 @@ Surcharge possible dans le YAML (`params:`) ou en ligne de commande (`--params '
 | `cachebench/ui/` | interface web : `server.py` (API JSON, tâches en sous-processus) et `static/` (page, script, styles) |
 | `experiments/` | configurations d'expériences |
 | `scripts/http_replay.py` | rejoue une trace en requêtes HTTP sur une boutique Magento et mesure les temps |
+| `scripts/magento_seed_customers.py` | ajoute des clients synthétiques (noms, adresses) dans la base MySQL de Magento |
+| `scripts/magento_load_test.py` | test de charge par paliers : visiteurs simultanés tenus, débit maximal |
 | `results/` | résultats des expériences ; `magento-live*/` : tests HTTP sur la boutique locale |
 | `docs/architecture.md` | architecture du projet |
 | `php/` | module Magento 1 et bibliothèque PHP (même arborescence que Magento) |
@@ -390,6 +423,50 @@ remet aussi la politique à zéro). Pour revenir en arrière, remettez l'ancien 
 - « PHP 64 bits requis » : la version de PHP choisie dans WampServer est en 32 bits.
 - Rien dans `trace.csv` : le journal est désactivé, ou le cache de configuration n'a pas
   été vidé après l'activation.
+
+## Clients synthétiques et test de charge
+
+Deux scripts, à lancer à la main depuis la racine du projet, mesurent combien de visiteurs
+simultanés la boutique locale supporte.
+
+**1. Créer des clients** (directement dans la base MySQL de Magento) :
+
+```bash
+python scripts/magento_seed_customers.py -n 5000 --backup C:/wamp64/www/magento/var/aicache_backup/customers.sql
+python scripts/magento_seed_customers.py --delete        # les retirer
+```
+
+Noms, e-mails, dates de naissance et adresses vraisemblables (Maroc, France, Belgique,
+Royaume-Uni, Allemagne, Pays-Bas), sur les domaines réservés `example.com/.net/.org` : aucun
+e-mail ne peut partir vers une vraie personne. Mot de passe commun (`--password`, par défaut
+`Test1234!`), haché comme Magento 1.9.4. Les clients ajoutés portent `increment_id =
+synth-<n>`, ce qui permet à `--delete` de ne jamais toucher aux vrais. La liste des comptes
+est écrite dans `data/magento_customers.csv` pour le test de charge. `--dry-run fichier.sql`
+écrit le SQL sans l'exécuter.
+
+**2. Lancer le test de charge** :
+
+```bash
+python scripts/magento_load_test.py                                  # 10 à 300 visiteurs, 1 min par palier
+python scripts/magento_load_test.py --users 20,40,60,80 --step 120   # paliers plus fins autour de la limite
+python scripts/magento_load_test.py --users 4,8,16,32 --think 0      # débit maximal, sans pause
+```
+
+Chaque visiteur virtuel garde ses cookies et parcourt la boutique comme un client : accueil,
+catégories (pages suivantes, tris), recherche, fiches produit (produits populaires plus
+souvent), ajout au panier, panier, connexion avec un des comptes créés, espace client, page
+de commande, déconnexion, avec une pause de 2 à 8 s entre deux pages (`--think`). Aucune
+commande n'est passée. Le nombre de visiteurs monte par paliers (`--users`, `--step`) ; un
+palier **tient** si les erreurs restent sous 1 % (`--max-error`) et le p95 sous 3 s
+(`--max-p95`). Le test s'arrête au premier palier qui ne tient pas et écrit dans
+`results/loadtest/<date>/` : `report.md` (tableau des paliers, limite, détail par page),
+`steps.csv`, `requests.csv` et `summary.json`. Il compte aussi les plantages d'Apache dans
+`C:/wamp64/logs/apache_error.log` (`--apache-log`).
+
+Le test mesure la boutique telle qu'elle est configurée (politique de cache de `local.xml`,
+cache de pages, Xdebug) ; seules les pages HTML sont demandées, pas les images, CSS et JS.
+Il remplit aussi des tables de Magento (sessions, paniers, journaux de visite) : à nettoyer
+après coup (Système → Journaux, ou `php shell/log.php clean`).
 
 ## Étapes suivantes
 

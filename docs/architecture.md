@@ -78,7 +78,10 @@ Un registre (`@register("nom")`) associe un nom à une classe. Deux contrats :
   et `cacheus_pp.py` (CACHEUS++ du projet cache_benchmark).
 
 `ml/mlp.py` porte le petit réseau numpy de `drl`, exporté en JSON dans `models/` pour que
-PHP l'évalue sans dépendance.
+PHP l'évalue sans dépendance. Son entraînement peut passer sur une carte NVIDIA
+(`train-drl --device gpu`) : `ml/device.py` fournit numpy ou CuPy, qui a la même API, et les
+poids sont ramenés en numpy avant l'export. Seul l'entraînement change de matériel ; la
+collecte des exemples et l'inférence restent sur le processeur.
 
 ### Moteur et expériences
 
@@ -188,7 +191,7 @@ flowchart LR
 | `cachebench/traces/` | `Request`, CSV commun, générateur Magento 1, traces externes |
 | `cachebench/policies/` | registre, politiques, adaptateurs du code tiers |
 | `cachebench/_cache_benchmark/` | fichiers du projet cache_benchmark, non modifiés |
-| `cachebench/ml/` | réseau numpy de `drl` |
+| `cachebench/ml/` | réseau numpy de `drl`, choix du calcul CPU ou GPU (`device.py`) |
 | `cachebench/engine.py`, `experiment.py`, `cli.py` | moteur, expériences, ligne de commande |
 | `cachebench/ui/` | interface web (serveur et page) |
 | `experiments/` | expériences YAML |

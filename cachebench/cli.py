@@ -8,6 +8,7 @@ from dataclasses import asdict
 
 from . import experiment
 from .engine import trace_stats
+from .ml.device import DEVICES
 from .policies import available
 from .traces import FORMATS, detect, load_trace, write_csv
 from .traces.magento1 import Magento1Config, generate
@@ -48,6 +49,7 @@ def _cmd_train_drl(a) -> int:
     trace = apply_size_mode(trace, a.sizes)
     capacity = resolve_capacity(a.capacity, trace_stats(trace))
     info = train(trace, capacity, a.out, k=a.k, horizon=a.horizon, epochs=a.epochs, seed=a.seed,
+                 hidden=a.hidden, batch=a.batch, device=a.device,
                  meta={"sizes": a.sizes, "trained_on": source, "capacity_spec": a.capacity})
     print(f"Modèle écrit dans {a.out} : {json.dumps(info)}")
     return 0
@@ -105,6 +107,11 @@ def main(argv: list[str] | None = None) -> int:
     t.add_argument("-k", type=int, default=16)
     t.add_argument("--horizon", type=int, default=5000, help="requêtes regardées pour la récompense")
     t.add_argument("--epochs", type=int, default=8)
+    t.add_argument("--hidden", type=int, default=32,
+                   help="neurones par couche cachée ; le module PHP évalue ce réseau à chaque éviction")
+    t.add_argument("--batch", type=int, default=512, help="candidats par pas d'Adam")
+    t.add_argument("--device", choices=DEVICES, default="cpu",
+                   help="cpu (numpy), gpu (CuPy, carte NVIDIA) ou auto (GPU s'il est disponible)")
     t.set_defaults(fn=_cmd_train_drl)
 
     s = sub.add_parser("stats", help="statistiques d'une trace (format commun ou externe)")
