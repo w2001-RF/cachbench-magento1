@@ -13,6 +13,8 @@ dependencies = ["numpy>=1.24", "pyyaml>=6"]
 dev = ["pytest>=7"]
 # Le code officiel de cacheus importe matplotlib au chargement.
 official = ["matplotlib>=3.5"]
+# Entraînement de drl sur carte NVIDIA (train-drl --device gpu) ; CUDA 12 : cupy-cuda12x.
+gpu = ["cupy-cuda13x>=14"]
 
 [project.scripts]
 cachebench = "cachebench.cli:main"

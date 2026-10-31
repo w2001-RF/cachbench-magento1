@@ -15,6 +15,8 @@ from pathlib import Path
 
 import numpy as np
 
+from .device import get_xp, to_numpy
+
 FORMAT = "cachebench-mlp-1"
 
 
@@ -38,18 +40,27 @@ class MLP:
 
     # --- entraînement -------------------------------------------------------------
     def fit(self, X: np.ndarray, y: np.ndarray, epochs: int = 8, batch: int = 512,
-            lr: float = 1e-3, seed: int = 0, log=None) -> list[float]:
+            lr: float = 1e-3, seed: int = 0, log=None, device: str = "cpu") -> list[float]:
+        """device : « cpu » (numpy), « gpu » (CuPy) ou « auto ». Mêmes lots, même ordre, même
+        Adam ; sur GPU les sommes ne se font pas dans le même ordre, d'où des poids très proches
+        mais pas identiques au bit près."""
+        xp, name = get_xp(device)
+        if log:
+            log(f"calcul : {name}")
         rng = np.random.default_rng(seed)
         self.mean = X.mean(axis=0)
         self.std = X.std(axis=0) + 1e-6
-        Xn = (X - self.mean) / self.std
-        params = self.W + self.b
-        m = [np.zeros_like(p) for p in params]
-        v = [np.zeros_like(p) for p in params]
+        Xn = xp.asarray((X - self.mean) / self.std)
+        y = xp.asarray(y)
+        Ws = [xp.asarray(W) for W in self.W]
+        bs = [xp.asarray(b) for b in self.b]
+        params = Ws + bs
+        m = [xp.zeros_like(p) for p in params]
+        v = [xp.zeros_like(p) for p in params]
         t = 0
         losses = []
         for ep in range(epochs):
-            idx = rng.permutation(len(Xn))
+            idx = xp.asarray(rng.permutation(len(Xn)))
             total = 0.0
             for s in range(0, len(idx), batch):
                 bi = idx[s:s + batch]
@@ -57,21 +68,21 @@ class MLP:
                 # passe avant
                 acts = [xb]
                 h = xb
-                for i, (W, b) in enumerate(zip(self.W, self.b)):
+                for i, (W, b) in enumerate(zip(Ws, bs)):
                     h = h @ W + b
-                    if i < len(self.W) - 1:
-                        h = np.maximum(h, 0)
+                    if i < len(Ws) - 1:
+                        h = xp.maximum(h, 0)
                     acts.append(h)
                 err = h[:, 0] - yb
-                total += float((err ** 2).sum())
+                total += (err ** 2).sum()   # reste sur la carte : pas de synchronisation par lot
                 # passe arrière (erreur quadratique)
                 g = (2 * err / len(bi))[:, None]
                 gW, gb = [], []
-                for i in range(len(self.W) - 1, -1, -1):
+                for i in range(len(Ws) - 1, -1, -1):
                     gW.insert(0, acts[i].T @ g)
                     gb.insert(0, g.sum(axis=0))
                     if i > 0:
-                        g = (g @ self.W[i].T) * (acts[i] > 0)
+                        g = (g @ Ws[i].T) * (acts[i] > 0)
                 grads = gW + gb
                 t += 1
                 for p, gr, mi, vi in zip(params, grads, m, v):
@@ -79,10 +90,12 @@ class MLP:
                     mi += 0.1 * gr
                     vi *= 0.999
                     vi += 0.001 * gr * gr
-                    p -= lr * (mi / (1 - 0.9 ** t)) / (np.sqrt(vi / (1 - 0.999 ** t)) + 1e-8)
-            losses.append(total / len(Xn))
+                    p -= lr * (mi / (1 - 0.9 ** t)) / (xp.sqrt(vi / (1 - 0.999 ** t)) + 1e-8)
+            losses.append(float(total) / len(Xn))
             if log:
                 log(f"époque {ep + 1}/{epochs} : erreur quadratique moyenne {losses[-1]:.4f}")
+        self.W = [to_numpy(W) for W in Ws]
+        self.b = [to_numpy(b) for b in bs]
         return losses
 
     # --- export ---------------------------------------------------------------------
