@@ -1,0 +1,10 @@
+name: magento-external-1
+output: results/magento-external.csv
+seeds: [1, 2, 3, 4, 5]
+traces:
+- name: synth-new
+  generator: magento1
+  params: {n_requests: 1000000, product_alpha: 1.5}
+cache_sizes: [1%, 5%, 10%, 20%, 30%, 40%, 50%]
+engine: {warmup: 0.1, hit_cost_ms: 0.5, sizes: unit, invalidation: lazy}
+policies: [cacheus, cacheus_pp, lecar, lfu, lru, semantic]

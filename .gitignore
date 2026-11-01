@@ -5,3 +5,5 @@ traces/*.csv
 vendor/*/
 # journaux bruts du cache des passes Magento (≈ 22 Mo chacun)
 results/magento-live*/*.cache-trace.csv
+results/cacheus-pp2-live/runs/*/cache-trace.csv
+results/live-all-policies/runs/*/cache-trace.csv

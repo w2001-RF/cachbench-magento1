@@ -1,0 +1,1 @@
+{"class": "Aicache_Policy_CacheusPP", "capacity": 2097152, "used_bytes": 2077126, "evictions": 6695, "stats": {"expert_weights": {"lru": 0.435, "lfu": 0.4199, "gdsf": 0.1451}, "expert_evictions": {"lru": 3512, "lfu": 2844, "gdsf": 339}, "learning_rate": 0.0907, "admission_samples": 32419, "admission_rejections": 0}}

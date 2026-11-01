@@ -9,12 +9,16 @@ class Aicache_Factory
         'drl' => 'Aicache_Policy_Drl',
         'semantic' => 'Aicache_Policy_Semantic',
         'cacheus_pp' => 'Aicache_Policy_CacheusPP',
+        'cacheus_pp2' => 'Aicache_Policy_CacheusPP2',
     );
+
+    /** Code officiel de sylab/cacheus : compte des objets (tailles unitaires). */
+    public static $official = array('lecar', 'cacheus', 'arc', 'lirs');
 
     /** @return Aicache_Policy_Interface */
     public static function create($name, $capacity, array $params = array())
     {
-        if ($name === 'lecar' || $name === 'cacheus') {
+        if (in_array($name, self::$official, true)) {
             return new Aicache_Policy_Official($name, $capacity, $params);
         }
         if (!isset(self::$classes[$name])) {
@@ -26,6 +30,6 @@ class Aicache_Factory
 
     public static function available()
     {
-        return array_merge(array_keys(self::$classes), array('lecar', 'cacheus'));
+        return array_merge(array_keys(self::$classes), self::$official);
     }
 }

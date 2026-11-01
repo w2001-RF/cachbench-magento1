@@ -1,6 +1,6 @@
 """Le module PHP doit donner les mêmes hits que Python, requête par requête.
 
-Lancé seulement si `php` est installé. LeCaR et CACHEUS sont comparés au code officiel
+Lancé seulement si `php` est installé. LeCaR, CACHEUS, ARC et LIRS sont comparés au code officiel
 (il faut vendor/cacheus) ; un écart d'un ulp dans exp() de numpy pourrait en théorie les
 faire diverger, d'où un seuil d'accord plutôt qu'une égalité stricte pour eux.
 """
@@ -49,15 +49,23 @@ CASES = [
     ("lecar", {}, "unit", "lazy", 0.999),
     ("cacheus", {}, "unit", "lazy", 0.999),
     ("cacheus", {}, "unit", "eager", 0.999),
+    ("arc", {}, "unit", "lazy", 1.0),
+    ("arc", {}, "unit", "eager", 1.0),
+    ("lirs", {}, "unit", "lazy", 1.0),
+    ("lirs", {"hirs_ratio": 0.1}, "unit", "eager", 1.0),
     ("cacheus_pp", {"seed": 1}, "bytes", "eager", 1.0),
     ("cacheus_pp", {"seed": 3}, "unit", "lazy", 1.0),
+    ("cacheus_pp2", {"seed": 1}, "bytes", "eager", 1.0),
+    ("cacheus_pp2", {"seed": 3}, "unit", "lazy", 1.0),
+    ("cacheus_pp2", {"seed": 2, "feedback": "regret", "selection": "argmax", "admission": "logistic",
+                     "fix_versions": False, "rl": False}, "bytes", "eager", 1.0),
 ]
 
 
 @pytest.mark.parametrize("name,params,sizes,inv,min_agree", CASES,
                          ids=[f"{c[0]}-{c[2]}-{c[3]}" for c in CASES])
 def test_same_hits(trace_file, name, params, sizes, inv, min_agree):
-    if name in ("lecar", "cacheus") and not (vendor_dir() / "code" / "algs").is_dir():
+    if name in ("lecar", "cacheus", "arc", "lirs") and not (vendor_dir() / "code" / "algs").is_dir():
         pytest.skip("code officiel absent (scripts/fetch_vendor.sh)")
     trace, path = trace_file
     cap = resolve_capacity("10%", trace_stats(apply_size_mode(trace, sizes)))

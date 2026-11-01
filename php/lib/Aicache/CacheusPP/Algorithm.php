@@ -402,7 +402,7 @@ class Aicache_CacheusPP_Algorithm
     // Ensemble résident
     // ------------------------------------------------------------------
 
-    protected function insert($key, $size, $category, $missCost, array $features)
+    protected function insert($key, $size, $category, $missCost, array $features = null)
     {
         $entry = new Aicache_CacheusPP_Entry($size, $category, $this->missCost($category, $missCost),
             isset($this->seen[$key]) ? $this->seen[$key][0] : 1, $this->clock, $features);

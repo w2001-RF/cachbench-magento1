@@ -1,0 +1,379 @@
+[
+  {
+    "trace": "magento1-synth",
+    "size": "1%",
+    "capacity": 64,
+    "sizes": "unit",
+    "invalidation": "lazy",
+    "played": 94862,
+    "measured": 85375,
+    "unique_keys": 6489,
+    "one_hit_request_share": 0.019164681326558578,
+    "hit_rate": {
+      "opt": 0.5358243045387994,
+      "lru": 0.3199648609077599,
+      "cacheus_pp": 0.4188579795021962
+    },
+    "gap_points": 11.696632503660314,
+    "gap_requests": 10109,
+    "reverse_requests": 123,
+    "gap_causes": {
+      "évincée par LFU": 3796,
+      "refusée à l'admission": 2657,
+      "évincée par GDSF": 2435,
+      "évincée par LRU": 1221
+    },
+    "gap_by_popularity": {
+      "1-10 %": 7441,
+      "top 1 % des clés": 1932,
+      "10-50 %": 707,
+      "50-100 % (traîne)": 29
+    },
+    "gap_by_reuse": {
+      "4-16 × capacité": 5344,
+      "1-4 × capacité": 3523,
+      "< capacité (64 clés)": 1242
+    },
+    "gap_by_kind": {
+      "catalog_product_view": 5733,
+      "catalog_category_view": 3557,
+      "catalogsearch_result_index": 819
+    },
+    "evictions_by_expert": {
+      "LFU": 14293,
+      "GDSF": 7770,
+      "LRU": 4721
+    },
+    "admission_rejections": 27915,
+    "final_weights": {
+      "LRU": 0.965,
+      "LFU": 0.001,
+      "GDSF": 0.034
+    },
+    "weights_min_max": {
+      "LRU": [
+        0.179,
+        0.987
+      ],
+      "LFU": [
+        0.001,
+        0.623
+      ],
+      "GDSF": [
+        0.012,
+        0.621
+      ]
+    },
+    "sampled_evictions": 1276,
+    "victim_rank_mean": 0.2992016065830721,
+    "expert_rank_mean": {
+      "LRU": 0.4578271943573668,
+      "LFU": 0.23335864028213166,
+      "GDSF": 0.33902331504702193
+    },
+    "best_of_three_rank_mean": 0.10668103448275862,
+    "chosen_is_best_share": 0.4498432601880878,
+    "dead_share_in_cache": 0.006747159090909091,
+    "victim_dead_share": 0.0274294670846395
+  },
+  {
+    "trace": "magento1-synth",
+    "size": "5%",
+    "capacity": 324,
+    "sizes": "unit",
+    "invalidation": "lazy",
+    "played": 94862,
+    "measured": 85375,
+    "unique_keys": 6489,
+    "one_hit_request_share": 0.019164681326558578,
+    "hit_rate": {
+      "opt": 0.7345710102489019,
+      "lru": 0.5602108345534407,
+      "cacheus_pp": 0.655367496339678
+    },
+    "gap_points": 7.920351390922398,
+    "gap_requests": 6879,
+    "reverse_requests": 117,
+    "gap_causes": {
+      "évincée par LFU": 3093,
+      "évincée par GDSF": 1781,
+      "refusée à l'admission": 1326,
+      "évincée par LRU": 679
+    },
+    "gap_by_popularity": {
+      "1-10 %": 3935,
+      "10-50 %": 2757,
+      "50-100 % (traîne)": 129,
+      "top 1 % des clés": 58
+    },
+    "gap_by_reuse": {
+      "4-16 × capacité": 3841,
+      "1-4 × capacité": 2137,
+      "< capacité (324 clés)": 901
+    },
+    "gap_by_kind": {
+      "catalog_product_view": 5493,
+      "catalogsearch_result_index": 878,
+      "catalog_category_view": 508
+    },
+    "evictions_by_expert": {
+      "LFU": 13348,
+      "GDSF": 5474,
+      "LRU": 2628
+    },
+    "admission_rejections": 9907,
+    "final_weights": {
+      "LRU": 0.957,
+      "LFU": 0.001,
+      "GDSF": 0.042
+    },
+    "weights_min_max": {
+      "LRU": [
+        0.115,
+        0.962
+      ],
+      "LFU": [
+        0.001,
+        0.603
+      ],
+      "GDSF": [
+        0.037,
+        0.696
+      ]
+    },
+    "sampled_evictions": 1650,
+    "victim_rank_mean": 0.23271417882528994,
+    "expert_rank_mean": {
+      "LRU": 0.432830153385709,
+      "LFU": 0.16213804713804714,
+      "GDSF": 0.30496071829405164
+    },
+    "best_of_three_rank_mean": 0.07536662925551814,
+    "chosen_is_best_share": 0.49575757575757573,
+    "dead_share_in_cache": 0.021760194537972316,
+    "victim_dead_share": 0.10606060606060606
+  },
+  {
+    "trace": "magento-2020-Mar",
+    "size": "1%",
+    "capacity": 230,
+    "sizes": "unit",
+    "invalidation": "lazy",
+    "played": 95522,
+    "measured": 85941,
+    "unique_keys": 23066,
+    "one_hit_request_share": 0.11402608823098344,
+    "hit_rate": {
+      "opt": 0.5021700934361946,
+      "lru": 0.2532435042645536,
+      "cacheus_pp": 0.2921190118802434
+    },
+    "gap_points": 21.005108155595114,
+    "gap_requests": 18094,
+    "reverse_requests": 42,
+    "gap_causes": {
+      "refusée à l'admission": 4962,
+      "évincée par LFU": 4927,
+      "évincée par LRU": 4776,
+      "évincée par GDSF": 3429
+    },
+    "gap_by_popularity": {
+      "10-50 %": 7551,
+      "1-10 %": 6380,
+      "top 1 % des clés": 3636,
+      "50-100 % (traîne)": 527
+    },
+    "gap_by_reuse": {
+      "1-4 × capacité": 8784,
+      "4-16 × capacité": 5833,
+      "< capacité (230 clés)": 3477
+    },
+    "gap_by_kind": {
+      "catalog_product_view": 18094
+    },
+    "evictions_by_expert": {
+      "LFU": 23925,
+      "GDSF": 16017,
+      "LRU": 13897
+    },
+    "admission_rejections": 12640,
+    "final_weights": {
+      "LRU": 0.942,
+      "LFU": 0.004,
+      "GDSF": 0.054
+    },
+    "weights_min_max": {
+      "LRU": [
+        0.001,
+        0.935
+      ],
+      "LFU": [
+        0.006,
+        0.996
+      ],
+      "GDSF": [
+        0.003,
+        0.524
+      ]
+    },
+    "sampled_evictions": 2341,
+    "victim_rank_mean": 0.3416767267797114,
+    "expert_rank_mean": {
+      "LRU": 0.48117489738684693,
+      "LFU": 0.27973367011496386,
+      "GDSF": 0.3268614304552123
+    },
+    "best_of_three_rank_mean": 0.1033783407313857,
+    "chosen_is_best_share": 0.42545920546774885,
+    "dead_share_in_cache": 0.11062905113013763,
+    "victim_dead_share": 0.28406663818880823
+  },
+  {
+    "trace": "magento-2020-Mar",
+    "size": "5%",
+    "capacity": 1153,
+    "sizes": "unit",
+    "invalidation": "lazy",
+    "played": 95522,
+    "measured": 85941,
+    "unique_keys": 23066,
+    "one_hit_request_share": 0.11402608823098344,
+    "hit_rate": {
+      "opt": 0.6688076703785155,
+      "lru": 0.5024726265693906,
+      "cacheus_pp": 0.521439126842834
+    },
+    "gap_points": 14.736854353568152,
+    "gap_requests": 12665,
+    "reverse_requests": 0,
+    "gap_causes": {
+      "évincée par LRU": 5235,
+      "évincée par GDSF": 5130,
+      "évincée par LFU": 2111,
+      "refusée à l'admission": 189
+    },
+    "gap_by_popularity": {
+      "1-10 %": 6178,
+      "10-50 %": 4866,
+      "top 1 % des clés": 1205,
+      "50-100 % (traîne)": 416
+    },
+    "gap_by_reuse": {
+      "4-16 × capacité": 7306,
+      "1-4 × capacité": 3726,
+      "< capacité (1153 clés)": 1623,
+      "> 16 × capacité": 10
+    },
+    "gap_by_kind": {
+      "catalog_product_view": 12665
+    },
+    "evictions_by_expert": {
+      "GDSF": 22022,
+      "LFU": 10948,
+      "LRU": 10970
+    },
+    "admission_rejections": 577,
+    "final_weights": {
+      "LRU": 0.124,
+      "LFU": 0.874,
+      "GDSF": 0.001
+    },
+    "weights_min_max": {
+      "LRU": [
+        0.092,
+        0.954
+      ],
+      "LFU": [
+        0.006,
+        0.885
+      ],
+      "GDSF": [
+        0.001,
+        0.897
+      ]
+    },
+    "sampled_evictions": 2930,
+    "victim_rank_mean": 0.28248699785986403,
+    "expert_rank_mean": {
+      "LRU": 0.4531108933809708,
+      "LFU": 0.2084433248773788,
+      "GDSF": 0.25130879823816193
+    },
+    "best_of_three_rank_mean": 0.05877085744563078,
+    "chosen_is_best_share": 0.5488054607508532,
+    "dead_share_in_cache": 0.2873746777215692,
+    "victim_dead_share": 0.48293515358361777
+  },
+  {
+    "trace": "magento-live",
+    "size": "8MB",
+    "capacity": 8388608,
+    "sizes": "bytes",
+    "invalidation": "eager",
+    "played": 190563,
+    "measured": 171507,
+    "unique_keys": 2308,
+    "one_hit_request_share": 0.0,
+    "hit_rate": {
+      "opt": 0.9881054417603946,
+      "lru": 0.9845720582833354,
+      "cacheus_pp": 0.9840064837003737
+    },
+    "gap_points": 0.40989580600209186,
+    "gap_requests": 703,
+    "reverse_requests": 0,
+    "gap_causes": {
+      "évincée par GDSF": 406,
+      "évincée par LRU": 177,
+      "évincée par LFU": 120
+    },
+    "gap_by_popularity": {
+      "1-10 %": 468,
+      "10-50 %": 235
+    },
+    "gap_by_reuse": {
+      "> 16 × capacité": 683,
+      "4-16 × capacité": 19,
+      "1-4 × capacité": 1
+    },
+    "gap_by_kind": {
+      "?": 703
+    },
+    "evictions_by_expert": {
+      "GDSF": 847,
+      "LFU": 1015,
+      "LRU": 953
+    },
+    "admission_rejections": 0,
+    "final_weights": {
+      "LRU": 0.339,
+      "LFU": 0.366,
+      "GDSF": 0.296
+    },
+    "weights_min_max": {
+      "LRU": [
+        0.326,
+        0.348
+      ],
+      "LFU": [
+        0.333,
+        0.365
+      ],
+      "GDSF": [
+        0.296,
+        0.333
+      ]
+    },
+    "sampled_evictions": 2815,
+    "victim_rank_mean": 0.19090009653635262,
+    "expert_rank_mean": {
+      "LRU": 0.1499016712806833,
+      "LFU": 0.0926773440643996,
+      "GDSF": 0.3577750464255019
+    },
+    "best_of_three_rank_mean": 0.02475201530263697,
+    "chosen_is_best_share": 0.7463587921847247,
+    "dead_share_in_cache": 0.6080347608052705,
+    "victim_dead_share": 0.7271758436944937
+  }
+]

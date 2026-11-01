@@ -10,8 +10,8 @@
  *     <backend_options>
  *       <inner_backend>Zend_Cache_Backend_File</inner_backend>   (ou Cm_Cache_Backend_Redis)
  *       <inner_options><cache_dir>var/cache</cache_dir></inner_options>
- *       <policy>cacheus</policy>                 lru, lfu, fifo, drl, lecar, cacheus, cacheus_pp
- *       <capacity>67108864</capacity>            octets (nombre d'entrées pour lecar et cacheus)
+ *       <policy>cacheus</policy>                 lru, lfu, fifo, drl, semantic, lecar, cacheus, arc, lirs, cacheus_pp, cacheus_pp2
+ *       <capacity>67108864</capacity>            octets (nombre d'entrées pour lecar, cacheus, arc et lirs)
  *       <params><model>var/aicache/drl-bytes.json</model></params>
  *       <trace_file>var/aicache/cache-trace.csv</trace_file>   (facultatif)
  *       <state_dir>var/aicache/state</state_dir>    (facultatif, sans APCu : partagé par Apache et la CLI)
@@ -149,7 +149,7 @@ class Aicache_Benchmark_Model_Backend extends Zend_Cache_Backend implements Zend
         $refused = array();
         $trace = $o['trace_file'] ? $o['trace_file'] : null;
         $this->store->update(function ($policy) use ($ops, $o, &$evicted, &$refused, $trace) {
-            $unit = in_array($o['policy'], array('lecar', 'cacheus'), true);
+            $unit = in_array($o['policy'], Aicache_Factory::$official, true);
             foreach ($ops as $op) {
                 if ($op[0] === 'reset' || $policy === null) {
                     $policy = Aicache_Factory::create($o['policy'], (int) $o['capacity'], (array) $o['params']);
@@ -168,6 +168,7 @@ class Aicache_Benchmark_Model_Backend extends Zend_Cache_Backend implements Zend
                     if (!$policy->contains($id)) {
                         $refused[] = $id;
                     }
+                    $r->size = $size;   // le journal garde la vraie taille, même pour une politique qui compte des objets
                 }
                 if ($trace) {
                     Aicache_Trace::append($trace, $r);
