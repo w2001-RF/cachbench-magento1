@@ -26,6 +26,15 @@ if ($mode === 'state') {
     if (method_exists($p, 'stats')) {
         $out['stats'] = $p->stats();
     }
+    if ($p instanceof Aicache_Policy_Official) {
+        // ces politiques comptent des objets : le script Python retrouve leurs octets dans le journal
+        $get = function ($name) use ($p) {
+            $r = new ReflectionProperty($p, $name);
+            $r->setAccessible(true);
+            return $r->getValue($p);
+        };
+        $out['resident_keys'] = array_map('strval', array_keys(array_diff_key($get('resident'), $get('stale'))));
+    }
     echo json_encode($out), "\n";
     exit;
 }

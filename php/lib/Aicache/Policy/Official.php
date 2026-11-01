@@ -1,6 +1,6 @@
 <?php
 /**
- * Adaptateur des portages LeCaR / CACHEUS, comme cachebench.policies.official :
+ * Adaptateur des portages LeCaR / CACHEUS / ARC / LIRS, comme cachebench.policies.official :
  * ces algorithmes comptent des objets (taille 1) et ne savent pas retirer une entrée,
  * donc une purge rend l'entrée périmée : la requête suivante sur la clé est un miss.
  */
@@ -14,7 +14,7 @@ class Aicache_Policy_Official implements Aicache_Policy_Interface
     protected $evictions = 0;
     protected $evicted = array();
 
-    /** @param string $name lecar ou cacheus */
+    /** @param string $name lecar, cacheus, arc ou lirs */
     public function __construct($name, $capacity, array $params = array())
     {
         $this->capacity = (int) $capacity;
@@ -23,6 +23,10 @@ class Aicache_Policy_Official implements Aicache_Policy_Interface
             $this->alg = new Aicache_Official_Lecar($this->capacity, $params);
         } elseif ($name === 'cacheus') {
             $this->alg = new Aicache_Official_Cacheus($this->capacity, $params);
+        } elseif ($name === 'arc') {
+            $this->alg = new Aicache_Official_Arc($this->capacity, $params);
+        } elseif ($name === 'lirs') {
+            $this->alg = new Aicache_Official_Lirs($this->capacity, $params);
         } else {
             throw new InvalidArgumentException("algorithme officiel non porté : $name");
         }
@@ -31,7 +35,7 @@ class Aicache_Policy_Official implements Aicache_Policy_Interface
     public function access(Aicache_Request $req)
     {
         if ($req->size !== 1) {
-            throw new InvalidArgumentException('lecar et cacheus comptent des objets : utiliser des tailles unitaires');
+            throw new InvalidArgumentException('lecar, cacheus, arc et lirs comptent des objets : utiliser des tailles unitaires');
         }
         $key = $req->key;
         list($hit, $ev) = $this->alg->request($key);
