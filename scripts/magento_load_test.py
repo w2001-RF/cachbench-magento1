@@ -308,7 +308,7 @@ def main() -> int:
             window = [r for r in rec.rows if r[2] == i and r[0] >= t_step + a.settle]
             s = stats(window, t_end - t_step - a.settle)
             c1 = crash_count(log)
-            s.update({"step": i, "users": level, "crashes": None if crashes0 is None or c1 is None else c1 - crashes0,
+            s.update({"step": i, "users": level, "t_measured": t_step + a.settle, "t_end": t_end, "crashes": None if crashes0 is None or c1 is None else c1 - crashes0,
                       "pages": {k: stats([r for r in window if r[4] == k], t_end - t_step - a.settle)
                                 for k in sorted({r[4] for r in window})}})
             s["holds"] = s["error_rate"] <= a.max_error and s["p95_ms"] <= a.max_p95 * 1000 and s["requests"] > 0

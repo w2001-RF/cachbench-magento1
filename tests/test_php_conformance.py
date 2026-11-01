@@ -51,6 +51,10 @@ CASES = [
     ("cacheus", {}, "unit", "eager", 0.999),
     ("cacheus_pp", {"seed": 1}, "bytes", "eager", 1.0),
     ("cacheus_pp", {"seed": 3}, "unit", "lazy", 1.0),
+    ("cacheus_pp2", {"seed": 1}, "bytes", "eager", 1.0),
+    ("cacheus_pp2", {"seed": 3}, "unit", "lazy", 1.0),
+    ("cacheus_pp2", {"seed": 2, "feedback": "regret", "selection": "argmax", "admission": "logistic",
+                     "fix_versions": False, "rl": False}, "bytes", "eager", 1.0),
 ]
 
 

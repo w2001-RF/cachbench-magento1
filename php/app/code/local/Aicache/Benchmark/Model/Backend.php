@@ -10,7 +10,7 @@
  *     <backend_options>
  *       <inner_backend>Zend_Cache_Backend_File</inner_backend>   (ou Cm_Cache_Backend_Redis)
  *       <inner_options><cache_dir>var/cache</cache_dir></inner_options>
- *       <policy>cacheus</policy>                 lru, lfu, fifo, drl, lecar, cacheus, cacheus_pp
+ *       <policy>cacheus</policy>                 lru, lfu, fifo, drl, lecar, cacheus, cacheus_pp, cacheus_pp2
  *       <capacity>67108864</capacity>            octets (nombre d'entrées pour lecar et cacheus)
  *       <params><model>var/aicache/drl-bytes.json</model></params>
  *       <trace_file>var/aicache/cache-trace.csv</trace_file>   (facultatif)

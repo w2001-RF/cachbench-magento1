@@ -150,6 +150,56 @@ tas redeviennent « valides » et le tas ne passe plus sous le seuil de compacta
 alors à chaque accès. Sans effet sur les décisions, mais coûteux ; le portage PHP compacte
 donc plus rarement.
 
+## CACHEUS++ v2
+
+`cacheus_pp2` (`cachebench/policies/cacheus_pp2.py`, portage PHP
+`lib/Aicache/CacheusPP/AlgorithmV2.php`) corrige les défauts de CACHEUS++ trouvés en comparant
+ses décisions à celles d'OPT (`scripts/analyze_opt_gap.py`, rapport dans `results/opt-gap/`).
+C'est une sous-classe de l'original, qui reste intact ; chaque correction a son paramètre, et
+avec les valeurs d'origine (`ORIGINAL` dans le module) v2 rend exactement les décisions de
+`cacheus_pp`, ce que vérifie `tests/test_cacheus_pp2.py`.
+
+| Paramètre | Original → v2 | Défaut corrigé |
+| --- | --- | --- |
+| `fix_versions` | non → oui | une clé réinsérée repartait à la version 0 : ses anciennes entrées de tas redevenaient valides |
+| `feedback` | `regret` → `counterfactual` | seul l'expert tiré était puni ; maintenant, le candidat de chaque expert entre dans son fantôme à chaque éviction |
+| `history_factor` | 1 → 4 | fantômes de 4 tailles de cache au lieu d'une : la plupart des erreurs passaient inaperçues |
+| `freq_window` | 0 → 50 | fréquences divisées par deux toutes les 50 × (entrées du cache) requêtes |
+| `admission` | `logistic` → `none` | l'admission apprise refusait des clés qui reviennent ; sur les réglages, tout admettre faisait aussi bien (à l'évaluation, l'admission apprise aide un peu : −0,04 pts sans elle) |
+| `max_object_fraction` | 0,1 → 0,5 | les entrées de configuration de Magento, demandées à chaque page, dépassaient 10 % d'un petit cache et n'étaient jamais gardées |
+
+Essayés et écartés (mesures dans `results/cacheus-pp2/`) : choisir l'expert de plus fort
+poids au lieu de le tirer au sort, retirer la couche REINFORCE, l'admission TinyLFU, une zone
+de probation, un retour « tournoi » entre les trois candidats. Même un oracle qui prend
+toujours le meilleur des trois candidats ne fait guère mieux : l'écart restant avec OPT tient
+surtout à ce qu'OPT connaît l'avenir.
+
+```bash
+python scripts/eval_cacheus_pp2.py            # hors ligne : synthétique, 7 mois réels, journal de la boutique
+python scripts/magento_live_eval.py --users 100 --capacities 2MB,8MB --reps 6   # sur la boutique, sous charge
+```
+
+`eval_cacheus_pp2.py` rejoue chaque cas sur des répliques indépendantes (20 traces
+synthétiques, 10 graines par mois et par taille), tenues à l'écart du réglage, et compare
+v2 à CACHEUS++ en appariant les répliques : intervalles de confiance à 95 % (Student et
+bootstrap), tests t et de Wilcoxon, correction de Holm, et une ablation qui retire une
+correction à la fois. `magento_live_eval.py` fait passer chaque politique sur la vraie
+boutique, sous charge, en blocs dans un ordre tiré au sort. Les résultats et leur lecture
+sont dans `results/cacheus-pp2/report.md` et `results/cacheus-pp2-live/report.md`.
+
+Résultats (synthèse dans `results/cacheus-pp2/conclusions.md`) :
+
+- **Hors ligne**, sur les cas non vus au réglage, v2 gagne dans 13 cas sur 15 et ne perd
+  dans aucun : +0,7 à +2,3 pts sur les traces synthétiques, +1,5 pts sur les mois réels à 5 %,
+  +3,6 pts sur le journal de la boutique en petit cache ; jeu égal sur les mois réels à 1 % et
+  le journal à 4 Mo.
+- **Sur la boutique à 150 visiteurs simultanés** (le maximum tenu sans cache pleine page) :
+  - à 2 Mo, v2 gagne +7,8 pts de hit rate sur CACHEUS++ et divise le temps de réponse par 4 ;
+  - à 8 Mo, v2 perd −0,4 pts.
+- **Le temps de réponse dépend surtout du coût de l'état partagé.** Chaque page relit et
+  réécrit tout l'état sous verrou : 2 ms pour LRU, 18 ms pour CACHEUS++, 25 ms pour v2. LRU
+  reste donc le plus rapide sous charge, malgré un hit rate plus faible ou égal.
+
 ## Cache sémantique (étape 3)
 
 `semantic` applique aux pages de recherche la chaîne de GPTCache : embedding, plus proche
@@ -256,7 +306,7 @@ Surcharge possible dans le YAML (`params:`) ou en ligne de commande (`--params '
 | --- | --- |
 | `cachebench/traces/` | `Request`, lecture/écriture CSV, générateur Magento 1, traces externes |
 | `cachebench/_cache_benchmark/` | fichiers du projet cache_benchmark, non modifiés (CACHEUS++, lecteurs) |
-| `cachebench/policies/` | interface, registre, LRU, LFU, FIFO, OPT, adaptateurs du code officiel, `drl`, `semantic`, `cacheus_pp` |
+| `cachebench/policies/` | interface, registre, LRU, LFU, FIFO, OPT, adaptateurs du code officiel, `drl`, `semantic`, `cacheus_pp`, `cacheus_pp2` |
 | `cachebench/ml/` | réseau numpy et export JSON |
 | `models/` | modèles entraînés |
 | `scripts/fetch_vendor.sh` | récupère le code officiel à un commit figé |
@@ -269,6 +319,9 @@ Surcharge possible dans le YAML (`params:`) ou en ligne de commande (`--params '
 | `scripts/http_replay.py` | rejoue une trace en requêtes HTTP sur une boutique Magento et mesure les temps |
 | `scripts/magento_seed_customers.py` | ajoute des clients synthétiques (noms, adresses) dans la base MySQL de Magento |
 | `scripts/magento_load_test.py` | test de charge par paliers : visiteurs simultanés tenus, débit maximal |
+| `scripts/analyze_opt_gap.py` | pourquoi OPT fait mieux que CACHEUS++, décision par décision |
+| `scripts/eval_cacheus_pp2.py`, `scripts/stats_tools.py` | évaluation hors ligne de CACHEUS++ v2, intervalles de confiance et tests appariés |
+| `scripts/magento_live_eval.py`, `scripts/magento_cache_reset.php` | comparaison des politiques sur la boutique, sous charge, en blocs aléatoires |
 | `results/` | résultats des expériences ; `magento-live*/` : tests HTTP sur la boutique locale |
 | `docs/architecture.md` | architecture du projet |
 | `php/` | module Magento 1 et bibliothèque PHP (même arborescence que Magento) |
@@ -281,7 +334,7 @@ Le dossier `php/` a la même arborescence qu'une installation Magento 1.9 / Open
 
 - `lib/Aicache/` : bibliothèque sans dépendance, nommée à la façon Magento
   (`Aicache_Policy_Lru` → `lib/Aicache/Policy/Lru.php`). Politiques `lru`, `fifo`, `lfu`,
-  `drl` (lit le même JSON que Python), `semantic`, et portages de `lecar`, `cacheus` et `cacheus_pp`
+  `drl` (lit le même JSON que Python), `semantic`, et portages de `lecar`, `cacheus`, `cacheus_pp` et `cacheus_pp2`
   (même générateur aléatoire que numpy, poids en float32 comme numpy).
 - `app/code/local/Aicache/Benchmark/` : module `Aicache_Benchmark`.
   - **Journal des requêtes** : chaque page vitrine servie est écrite dans
@@ -398,7 +451,7 @@ le bloc `<cache>` existant ; gardez-en une copie) :
         <inner_options>
             <cache_dir>C:/wamp64/www/magento/var/cache_aicache</cache_dir>
         </inner_options>
-        <policy>cacheus</policy>            <!-- lru, lfu, fifo, drl, lecar, cacheus, cacheus_pp -->
+        <policy>cacheus</policy>            <!-- lru, lfu, fifo, drl, lecar, cacheus, cacheus_pp, cacheus_pp2 -->
         <state_dir>C:/wamp64/www/magento/var/aicache/state</state_dir>  <!-- sans APCu : même état pour Apache et la CLI -->
         <capacity>2000</capacity>           <!-- octets ; nombre d'entrées pour lecar et cacheus -->
         <!-- pour drl : <policy>drl</policy> <capacity>67108864</capacity>

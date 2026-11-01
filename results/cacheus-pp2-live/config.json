@@ -1,0 +1,17 @@
+{
+ "base": "http://127.0.0.1/magento",
+ "policies": "lru,cacheus_pp,cacheus_pp2",
+ "capacities": "2MB,8MB",
+ "reps": 6,
+ "users": 150,
+ "duration": 240.0,
+ "settle": 60.0,
+ "think": "2,8",
+ "seed": 2026,
+ "magento": "C:/wamp64/www/magento",
+ "php": "C:/wamp64/bin/php/php7.1.29/php.exe",
+ "mysql": "C:/wamp64/bin/mysql/mysql5.7.26/bin/mysql.exe",
+ "database": "magento",
+ "out": "results/cacheus-pp2-live",
+ "report_only": false
+}

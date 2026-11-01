@@ -31,5 +31,6 @@ policies:
   - cacheus
   - {name: drl, label: drl-k16, params: {model: models/drl-unit.json}}
   - {name: drl, label: drl-k64, params: {model: models/drl-unit-k64.json}}
+  - {name: drl, label: drl-512, params: {model: models/drl-512.json}}
   - cacheus_pp
   - opt

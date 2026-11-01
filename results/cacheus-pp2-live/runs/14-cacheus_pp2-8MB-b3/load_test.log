@@ -1,0 +1,8 @@
+boutique http://127.0.0.1/magento : 160 catégories, produits 1-10000, 5000 comptes clients
+paliers [150] visiteurs, 240 s chacun, pause 2-8 s ; résultats dans C:\Users\ULTRA PC\Desktop\cachbench-magento1\results\cacheus-pp2-live\runs\14-cacheus_pp2-8MB-b3
+
+visiteurs   req/s   médiane       p95       p99  erreurs plantages  verdict
+      150    22.1    1968ms    3734ms    5030ms    6.6%         1  NE TIENT PAS
+
+limite : 0 visiteurs simultanés ; débit maximal sans erreur : 20.6 pages/s à 150 visiteurs
+résultats : C:\Users\ULTRA PC\Desktop\cachbench-magento1\results\cacheus-pp2-live\runs\14-cacheus_pp2-8MB-b3 (report.md, steps.csv, requests.csv, summary.json)

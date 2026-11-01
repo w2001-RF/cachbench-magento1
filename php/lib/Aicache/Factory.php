@@ -9,6 +9,7 @@ class Aicache_Factory
         'drl' => 'Aicache_Policy_Drl',
         'semantic' => 'Aicache_Policy_Semantic',
         'cacheus_pp' => 'Aicache_Policy_CacheusPP',
+        'cacheus_pp2' => 'Aicache_Policy_CacheusPP2',
     );
 
     /** @return Aicache_Policy_Interface */

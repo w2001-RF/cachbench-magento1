@@ -75,7 +75,9 @@ Un registre (`@register("nom")`) associe un nom à une classe. Deux contrats :
   que la victime (`lru`, `lfu`, `fifo`, `opt`, `drl`, `semantic`) ;
 - `CachePolicy` : la politique gère elle-même son stockage. Sert à envelopper du code tiers
   **sans le modifier** : `official.py` (sylab/cacheus : `cacheus`, `lecar`, `arc`, `lirs`)
-  et `cacheus_pp.py` (CACHEUS++ du projet cache_benchmark).
+  et `cacheus_pp.py` (CACHEUS++ du projet cache_benchmark). `cacheus_pp2.py` en dérive
+  (CACHEUS++ v2) : chaque correction a son paramètre, et réglé comme l'original il rend les
+  mêmes décisions.
 
 `ml/mlp.py` porte le petit réseau numpy de `drl`, exporté en JSON dans `models/` pour que
 PHP l'évalue sans dépendance. Son entraînement peut passer sur une carte NVIDIA
@@ -173,6 +175,11 @@ flowchart LR
    onglet Test Magento (ou `scripts/http_replay.py`) → `*.http.csv` ; le journal du cache
    (`cache-trace.csv`) donne le hit rate effectif.
 4. **Lire et comparer** : onglet Résultats.
+5. **Évaluer une politique avec rigueur** : `scripts/eval_cacheus_pp2.py` (hors ligne, répliques
+   indépendantes, cas de réglage séparés des cas d'évaluation) et `scripts/magento_live_eval.py`
+   (boutique sous charge, blocs dans un ordre tiré au sort, état remis à zéro avant chaque
+   passe) ; les deux comparent par paires et donnent intervalles de confiance et tests
+   (`scripts/stats_tools.py`).
 
 ## Garanties et tests
 
@@ -180,6 +187,7 @@ flowchart LR
 | --- | --- |
 | `test_policies.py`, `test_traces_engine.py` | contrats des politiques, capacité jamais dépassée, métriques |
 | `test_official.py`, `test_cacheus_pp.py` | code tiers appelé sans modification, résultats attendus |
+| `test_cacheus_pp2.py` | CACHEUS++ v2 réglé comme l'original : mêmes hits que `cacheus_pp`, requête par requête |
 | `test_external_traces.py` | lecture et conversion des formats externes |
 | `test_php_conformance.py` | même hit ou miss en PHP et en Python à chaque requête, générateurs aléatoires identiques à numpy |
 | `test_ui.py` | API de l'interface, tâches en sous-processus, annulation, refus des requêtes non sûres |
@@ -197,7 +205,7 @@ flowchart LR
 | `experiments/` | expériences YAML |
 | `models/` | modèles `drl` entraînés |
 | `php/` | module Magento 1 et bibliothèque PHP |
-| `scripts/` | récupération du code officiel, rejeu HTTP |
-| `results/` | résultats ; `magento-live*/` : tests sur la boutique locale |
+| `scripts/` | récupération du code officiel, rejeu HTTP, tests de charge, analyse de l'écart avec OPT, évaluations de CACHEUS++ v2 (statistiques dans `stats_tools.py`) |
+| `results/` | résultats ; `magento-live*/` : tests sur la boutique locale ; `opt-gap/`, `cacheus-pp2*/` : analyse et évaluation de CACHEUS++ v2 |
 | `tests/` | tests Python, conformité PHP |
 | `vendor/` | code officiel de sylab/cacheus (usage de recherche, non redistribué) |
